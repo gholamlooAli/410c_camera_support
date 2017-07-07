@@ -427,11 +427,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	fmt.fmt.pix_mp.height= 960;//1080;
 	LOGS_ERR("cap->v4l2_fd= %d", cap->v4l2_fd);
 	ret = ioctl(cap->v4l2_fd, VIDIOC_S_FMT, &fmt);
-	if (ret < 0)
-	{
-		LOGS_ERR("Unable to set format %d", ret);
-		exit(-errno);
-	}
+	
 
 	ret = ioctl(cap->v4l2_fd, VIDIOC_TRY_FMT, &fmt);
 	if (ret != 0)
