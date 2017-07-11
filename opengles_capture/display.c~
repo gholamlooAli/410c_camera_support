@@ -554,11 +554,7 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 * The resolution of the texture matches the number of active pixels.
 	 */
 	glActiveTexture(GL_TEXTURE0);
-	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-	
-	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceparams->image_width,
-	//  sourceparams->image_height,/*(GLenum)displaydata->pixelformat*/GL_LUMINANCE_ALPHA,GL_UNSIGNED_BYTE, sourceparams->captured.start);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	error = glGetError();
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
@@ -777,9 +773,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * Luma will be replicated in x, y, and z using type GL_LUMINCANCE. Component w is set to 1.0.
 	 * The resolution of the texture matches the number of active pixels.
 	 */
-	//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, disp->width, disp->height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
-   
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 	error = glGetError();
 	if (error != GL_NO_ERROR) {
 		LOGS_ERR("Unable to generate texture %s", string_gl_error(error));

@@ -153,7 +153,7 @@ GLuint gles_load_program(const char *vertex_code, const char *fragment_code)
 	{
 		int mm,ll;
 		glGetProgramiv(program,GL_INFO_LOG_LENGTH,&mm);
-		char log[mm];
+		char* log=new char[mm];
 		glGetProgramInfoLog(program,mm,&ll,log);
 		LOGS_ERR("Unable to link program%s",log);
 		glDeleteProgram(program);

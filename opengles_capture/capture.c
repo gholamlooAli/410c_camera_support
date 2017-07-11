@@ -155,8 +155,8 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 	struct v4l2_buffer *buf;
 	struct v4l2_exportbuffer dma_buf;
 	int ret = 0;
-	LOGS_ERR("cap->num_buf=%d", cap->num_buf);
-	LOGS_ERR("cap->num_planes=%d", cap->num_planes);
+	LOGS_DBG("cap->num_buf=%d", cap->num_buf);
+	LOGS_DBG("cap->num_planes=%d", cap->num_planes);
 	//for (int i = 0; i < VIDEO_MAX_FRAME; i++)
 	//for (int i = 0; i < VIDEO_MAX_PLANES; i++)
 	//	LOGS_ERR("foooll= %d", i);
@@ -183,7 +183,7 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 		{
 			/* Separately memory map each plane to its own user space address */
 			cap->buffers[i].length[p] = buf->m.planes[p].length;
-			LOGS_ERR("buf->m.planes[p].length=%d   cap->v4l2_fd=%d", buf->m.planes[p].length, cap->v4l2_fd);
+			LOGS_DBG("buf->m.planes[p].length=%d   cap->v4l2_fd=%d", buf->m.planes[p].length, cap->v4l2_fd);
 	
 			cap->buffers[i].addr[p] = mmap(NULL, buf->m.planes[p].length,
 				PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -406,26 +406,42 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	 * NV12 is used by the render routine which has two planes.
 	 * First plane is luma, second plane is chroma at 1/4 resolution.
 	 */
-	cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+	if(opt->ddump==0)
+	{
+		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+		cap->num_planes = 1;
+	}
+	else
+	{
+		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+		cap->num_planes = 2;
+	}
 	cap->memory = V4L2_MEMORY_MMAP;
-	cap->num_planes = 2;
-
+	
 	/*
 	 * Framezises should be queried and a valid format chosen.
 	 * This application is forcing 1080p for the sensor and display.
 	 */
 	fmt.type = cap->type;
+	/*
 	ret = ioctl(cap->v4l2_fd, VIDIOC_G_FMT, &fmt);
 	if (ret < 0)
 	{
 		LOGS_ERR("Unable to get format %d", ret);
 		exit(-errno);
 	}
-	fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+	*/
+	if(opt->ddump==0)
+	{
+		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
+	}
+	else{
+		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+	}
 	fmt.fmt.pix_mp.num_planes = cap->num_planes;
-	fmt.fmt.pix_mp.width = 1280;//920;
-	fmt.fmt.pix_mp.height= 960;//1080;
-	LOGS_ERR("cap->v4l2_fd= %d", cap->v4l2_fd);
+	fmt.fmt.pix_mp.width = 1920;
+	fmt.fmt.pix_mp.height= 1080;
+	LOGS_DBG("cap->v4l2_fd= %d", cap->v4l2_fd);
 	ret = ioctl(cap->v4l2_fd, VIDIOC_S_FMT, &fmt);
 	if (ret < 0)
 	{
@@ -443,7 +459,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	/* Request the number of buffers indicated by the user options */
 	memset(&req, 0, sizeof(req));
 	req.count = opt->buffer_count;
-	LOGS_ERR("request count=%d", req.count);
+	LOGS_DBG("request count=%d", req.count);
 	req.type = cap->type;
 	req.memory = cap->memory;
 	ret = ioctl(cap->v4l2_fd, VIDIOC_REQBUFS, &req);
@@ -455,7 +471,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 
 	/* Save the number of buffers actually allocated and set the DMA desciptors to invalid descriptors. */
 	cap->num_buf = req.count;
-	LOGS_ERR("request count=%d", req.count);
+	LOGS_DBG("request count=%d", req.count);
 	
 	for (int i = 0; i < cap->num_buf; i++)
 		for (int p = 0; p < cap->num_planes; p++)

@@ -105,7 +105,6 @@ void set_default_options(struct options *opt)
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
 	opt->dma_export = false;
-	opt->ddump=false;
 }
 
 
