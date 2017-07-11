@@ -114,27 +114,32 @@ static const char fShaderStr[] =
 	"uniform mediump int im_h;			\n"      	
 	"uniform mediump int uimage_width;			\n"	
 	"uniform sampler2D s_luma_texture;                        \n"
-	"layout (location=0) out vec4 outColor;   \n"
+	"layout (location=0) out vec4 out_color;   \n"
 	//"layout (location=1) int uimage_width;			\n"
+	"// Additive offset for BT656 YUV to RGB transform.	\n"
+	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
+	
+	"const mat3 coeff = mat3(	\n"
+	"    1.0,      1.0,     1.0,	\n"
+	"    0.0,     -0.344,  1.722,	\n"
+	"    1.402,   -0.714,   0);	\n"
+	"// Temporary variable for YUV value	\n"
+	"vec3 yuv;	\n"
+	"// Temporary variable for RGB value	\n"
+	"vec3 rgb;	\n"
+	
       "void main()                                         \n"
 	
 
       "{                                                   \n"
       
-	  "float red, green, blue;       \n"
 	  "vec4 luma_chroma;	       \n"
-	  "float luma, chroma_u,  chroma_v;       \n"
 	  "float pixelx, pixely;	       \n"
 	  "float xcoord, ycoord;       \n"
 	  "float texture_width, texture_height;       \n"
 	  "float texel_width, texel_height;       \n"
-	  "float x, y;		       \n"
-	  "float u, v;		       \n"
 	  "vec3 yuv;		       \n"
 	  "vec4 res;		       \n"
-	// note: pixelx, pixely are 0.0 to 1.0 so "next pixel horizontally"
-  	//  is not just pixelx + 1; rather pixelx + texel_width.
-
 	  "pixelx = v_tex_coord.x;	\n"
 	  "pixely = v_tex_coord.y;	\n"
 	  "texture_width=float(uimage_width);	\n"
@@ -142,60 +147,32 @@ static const char fShaderStr[] =
 	  "texel_width=1.0/texture_width; \n"
 	  "texel_height=1.0/texture_height; \n"	
 	  //"x = pixelx - (IMAGE_WIDTH * 0.5) / texture_width;	\n"
-	  //"y = pixely - (IMAGE_HEIGHT * 0.5) / texture_height;	\n"
-
-	  //"u = x*x - y*y;	\n"
-	  //"v = 2.0*x*y;	\n"
-
-	  //"u = u + (IMAGE_WIDTH * 0.5) / texture_width;		\n"
-	  //"v = v + (IMAGE_HEIGHT * 0.5) / texture_height;	\n"
-	  
-	  //"pixelx = clamp(u, 0.0, (IMAGE_WIDTH - 1.0) / texture_width);		\n"
-	  //"pixely = clamp(v, 0.0, (IMAGE_HEIGHT - 1.0) / texture_height);	\n"
-	  // if pixelx is even, then that pixel contains [Y U] and the 
-	  //    next one contains [Y V] -- and we want the V part.
-	  // if  pixelx is odd then that pixel contains [Y V] and the 
-	  //     previous one contains  [Y U] -- and we want the U part.
-	  
-	  // note: only valid for images whose width is an even number of
-	  // pixels
-  
+	 
   	  "xcoord = floor (v_tex_coord.x * texture_width);	\n"
   
 	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
-  
-	  // just look up the brightness
-	  "luma = (luma_chroma.a - 0.0625) * 1.1643;	\n"
-	  //"luma=luma_chroma.a;	\n"
+	  "    yuv.x = texture2D(s_luma_texture, v_tex_coord).x;\n"
+	
 	  "if (0.0 == mod(xcoord , 2.0)) \n"	// even
 	   " {				\n"
-	   "   chroma_u = luma_chroma.r;	\n"
-//	   "   chroma_v = texture2D(s_texture,vec2(pixelx + texel_width, pixely)).r;	\n"
-	   "   chroma_v = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r;	\n"
+	   "   yuv.y = luma_chroma.r;	\n"
+	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r;	\n"
 	   " }	\n"
 	  "else \n"// odd
 	   " {	\n"
-	   "   chroma_v = luma_chroma.r;	\n"
-	   "   chroma_u = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r; 	\n"    
-//	   "   chroma_u = texture2D(s_texture,vec2(pixelx - texel_width, pixely)).r; 	\n"    
+	   "   yuv.z = luma_chroma.r;	\n"
+	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r; 	\n"    
 	   "}	\n"
-	  "chroma_u = chroma_u - 0.5;	\n"
-	  "chroma_v = chroma_v - 0.5;	\n"
-
-	  "res.r = luma + 1.5958 * chroma_v;	\n"
-	  "res.g = luma - 0.39173 * chroma_u - 0.8129 * chroma_v;	\n"
-	  "res.b = luma + 2.017 * chroma_u;	\n"
-	  "res.a = 1.0;				\n"
-//	  "red = chroma_u ;	\n"
-//	  "green = 0.0;	\n"
-//	  "blue = 0.0 ;	\n"
-
-//	  "red = luma ;	\n"
-//	  "green = luma;	\n"
-//	  "blue = luma ;	\n"
-
-	 // "gl_FragColor = clamp(res, vec4(0), vec4(1));	\n"
-	 "outColor = clamp(res, vec4(0), vec4(1));	\n"
+	  
+	"yuv += offset;\n"
+	"res.r = yuv.x + 1.5958 * yuv.z;	\n"
+	"res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	\n"
+	"res.b = yuv.x + 2.017 * yuv.y;	\n"
+	"res.a = 1.0;				\n"
+	//"    rgb = coeff * yuv;\n"
+	//"    res = vec4(rgb,1);\n"
+	"    out_color = clamp(res,vec4(0),vec4(1));\n"
+	
       "}                                                   \n";
 
 
@@ -554,7 +531,11 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 * The resolution of the texture matches the number of active pixels.
 	 */
 	glActiveTexture(GL_TEXTURE0);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	
+	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceparams->image_width,
+	//  sourceparams->image_height,/*(GLenum)displaydata->pixelformat*/GL_LUMINANCE_ALPHA,GL_UNSIGNED_BYTE, sourceparams->captured.start);
 	error = glGetError();
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
@@ -773,7 +754,9 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * Luma will be replicated in x, y, and z using type GL_LUMINCANCE. Component w is set to 1.0.
 	 * The resolution of the texture matches the number of active pixels.
 	 */
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, disp->width, disp->height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
+   
 	error = glGetError();
 	if (error != GL_NO_ERROR) {
 		LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
