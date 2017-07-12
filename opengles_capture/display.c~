@@ -135,6 +135,7 @@ static const char fShaderStr[] =
       
 	  "vec4 luma_chroma;	       \n"
 	  "float pixelx, pixely;	       \n"
+	  "float x,y,u,v;       \n"
 	  "float xcoord, ycoord;       \n"
 	  "float texture_width, texture_height;       \n"
 	  "float texel_width, texel_height;       \n"
@@ -142,32 +143,58 @@ static const char fShaderStr[] =
 	  "vec4 res;		       \n"
 	  "pixelx = v_tex_coord.x;	\n"
 	  "pixely = v_tex_coord.y;	\n"
-	  "texture_width=float(uimage_width);	\n"
-	  "texture_height=float(im_h);	\n"
+	  "texture_width=float(1920);	\n"
+	  "texture_height=float(1080);	\n"
 	  "texel_width=1.0/texture_width; \n"
 	  "texel_height=1.0/texture_height; \n"	
 	  //"x = pixelx - (IMAGE_WIDTH * 0.5) / texture_width;	\n"
-	 
-  	  "xcoord = floor (v_tex_coord.x * texture_width);	\n"
-  
-	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
-	  "    yuv.x = texture2D(s_luma_texture, v_tex_coord).x;\n"
-	
+	  "x=v_tex_coord.x-0.5;		\n"
+	  "y=v_tex_coord.y-0.5;		\n"
+	  "u=x*x -y*y;		\n"
+	  "v=2.0 * x * y;		\n"
+	  "u=u+0.5;		\n"
+	  "v=v+0.5;		\n"
+	  "u=v_tex_coord.x;		\n"
+	  "v=v_tex_coord.y;		\n"
+	  
+	  "pixelx=clamp(u,0.0, (1920.0-1.0) /1920.0);	\n"
+	  "pixely=clamp(v,0.0, (1080.0-1.0) /1080.0);	\n"
+	  "xcoord = floor (pixelx * 1920.0);	\n"
+  	  //"xcoord = floor (v_tex_coord.x * 1920.0);	\n"
+	  //"xcoord = floor (v_tex_coord.x * texture_width);	\n" 
+	  "luma_chroma = texture2D(s_luma_texture, vec2(pixelx,pixely));	\n"
+	  //"luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
+	  //"    yuv.x = texture2D(s_luma_texture, v_tex_coord).x;\n"
+	// just look up the brightness
+	  "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
+	  
 	  "if (0.0 == mod(xcoord , 2.0)) \n"	// even
 	   " {				\n"
 	   "   yuv.y = luma_chroma.r;	\n"
-	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r;	\n"
+	   //"   yuv.z = texture2D(s_luma_texture,vec2(pixelx - texel_width, pixely)).r;	\n"
+	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r;	\n"
 	   " }	\n"
 	  "else \n"// odd
 	   " {	\n"
 	   "   yuv.z = luma_chroma.r;	\n"
-	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r; 	\n"    
+	   //"   yuv.y = texture2D(s_luma_texture,vec2(pixelx + texel_width, pixely)).r; 	\n"    
+	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r; 	\n"    
 	   "}	\n"
 	  
 	"yuv += offset;\n"
+	
+	//"res.r = yuv.x + 1.402 * yuv.z;	\n"
+	//"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
+	//"res.b = yuv.x + 1.772 * yuv.y;	\n"
+	
 	"res.r = yuv.x + 1.5958 * yuv.z;	\n"
 	"res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	\n"
 	"res.b = yuv.x + 2.017 * yuv.y;	\n"
+	
+	//"res.r = yuv.x + 1.793 * yuv.z;	\n"
+	//"res.g = yuv.x - 0.213 * yuv.y - 0.534 * yuv.z;	\n"
+	//"res.b = yuv.x + 2.115 * yuv.y;	\n"
+	
 	"res.a = 1.0;				\n"
 	//"    rgb = coeff * yuv;\n"
 	//"    res = vec4(rgb,1);\n"
@@ -233,7 +260,7 @@ int x11_create_window(struct display_context *disp)
 	// It will take some time for the display to acknowledge the event.
 	// An Expose event will occur when this is completed.
 	Atom wm_state = XInternAtom(x11_disp, "_NET_WM_STATE", false);
-	Atom fullscreen = XInternAtom(x11_disp, "_NET_WM_STATE_FULLSCREEN", false);
+	//ali Atom fullscreen = XInternAtom(x11_disp, "_NET_WM_STATE_FULLSCREEN", false);
 
 	XEvent fs_event;
 	memset(&fs_event, 0, sizeof(fs_event));
@@ -244,8 +271,9 @@ int x11_create_window(struct display_context *disp)
 	fs_event.xclient.message_type = wm_state;
 	fs_event.xclient.format = 32;
 	fs_event.xclient.data.l[0] = 1;
-	fs_event.xclient.data.l[1] = fullscreen;
-	fs_event.xclient.data.l[2] = 0;
+	//ali fs_event.xclient.data.l[1] = fullscreen;
+	//ali fs_event.xclient.data.l[2] = 0;
+	fs_event.xclient.data.l[1] = 0;	//ali
 
 	XSendEvent(x11_disp, win_root, false,
 		SubstructureRedirectMask | SubstructureNotifyMask,
@@ -532,7 +560,7 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 */
 	glActiveTexture(GL_TEXTURE0);
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, 1920,1080/*disp->width, disp->height*/,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	
 	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceparams->image_width,
 	//  sourceparams->image_height,/*(GLenum)displaydata->pixelformat*/GL_LUMINANCE_ALPHA,GL_UNSIGNED_BYTE, sourceparams->captured.start);
@@ -631,8 +659,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	(void)render_ctx;
 
 	/* force full screen window sizing */
-	disp->width = 1920;
-	disp->height = 1080;
+	disp->width = 1280;//640;//960;//640;//1920;
+	disp->height =960;//480;//540;//480;// 1080;
 
 	/* Create a window and get the native windows and display handles required for EGL init */
 	ret = x11_create_window(disp);
@@ -755,7 +783,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * The resolution of the texture matches the number of active pixels.
 	 */
 	//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, disp->width, disp->height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1920,1080/*disp->width, disp->height*/, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
    
 	error = glGetError();
 	if (error != GL_NO_ERROR) {
