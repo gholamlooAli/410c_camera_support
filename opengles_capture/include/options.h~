@@ -71,6 +71,7 @@ struct usage {
  * Data structure for all user command line options.
  */
 struct options {
+ int ddump;
 	/** number of buffers to capture. */
 	int capture_count;
 	/** Number of buffers to allocate from the v4l2 device. */

@@ -71,6 +71,8 @@ struct usage {
  * Data structure for all user command line options.
  */
 struct options {
+ int im_width;
+ int im_height;
  int ddump;
 	/** number of buffers to capture. */
 	int capture_count;

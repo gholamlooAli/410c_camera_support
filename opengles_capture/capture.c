@@ -266,7 +266,7 @@ int stop_stream(int fd)
  * @param disp Display Data management structure with GPU handles.
  * @return error status of the function. Value 0 is returned on success.
  */
-int capture_display_yuv(struct capture_context *cap, struct display_context *disp)
+int capture_display_yuv(struct capture_context *cap, struct display_context *disp, struct options* opt)
 {
 	int ret = 0;
 	struct v4l2_buffer buf;
@@ -280,13 +280,15 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 
 	/* Select an empty buffer for priming the video display */
 	disp->render_ctx.num_buffers = cap->num_planes;
+	disp->render_ctx.texture_width=opt->im_width;
+	disp->render_ctx.texture_height=op;
 	for (int i = 0; i < cap->num_planes; i++)
 	{
 		disp->render_ctx.buffers[i] = cap->buffers[0].addr[i];
 	}
 
 	/* Setup the OpenGL display, disp->render will be assigned for future display calls */
-	ret = camera_nv12m_setup(disp, &disp->render_ctx);
+	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt);
 	if (ret)
 	{
 		LOGS_ERR("Error setting up display aborting capture");
@@ -752,7 +754,7 @@ int capture_and_display(void* cap_ctx, void* disp_ctx, struct options* opt)
 		disp->callbacks.private_context = cap;
 
 		/* Enter the capture display loop */
-		ret = capture_display_yuv(cap, disp);
+		ret = capture_display_yuv(cap, disp, opt);
 		/* Cleanly release the buffers map and free them in the kernel on either error or exit request. */
 		capture_shutdown(cap);
 

@@ -106,6 +106,8 @@ void set_default_options(struct options *opt)
 	opt->program_use = opt->default_usage;
 	opt->dma_export = false;
 	opt->ddump=false;
+	opt->im_width=1920;
+	opt->im_height=1080;
 }
 
 

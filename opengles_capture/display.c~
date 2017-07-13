@@ -109,20 +109,17 @@ static const char fShaderStr[] =
 		
        "precision mediump float;                            \n"
        "in vec2 v_tex_coord;                            \n"
-      	//"varying vec2 v_tex_coord;                            \n"
-	
-	"uniform mediump int im_h;			\n"      	
+      	
 	"uniform mediump int uimage_width;			\n"	
 	"uniform sampler2D s_luma_texture;                        \n"
 	"layout (location=0) out vec4 out_color;   \n"
-	//"layout (location=1) int uimage_width;			\n"
 	"// Additive offset for BT656 YUV to RGB transform.	\n"
 	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
 	
-	"const mat3 coeff = mat3(	\n"
-	"    1.0,      1.0,     1.0,	\n"
-	"    0.0,     -0.344,  1.722,	\n"
-	"    1.402,   -0.714,   0);	\n"
+	//"const mat3 coeff = mat3(	\n"
+	//"    1.0,      1.0,     1.0,	\n"
+	//"    0.0,     -0.344,  1.722,	\n"
+	//"    1.402,   -0.714,   0);	\n"
 	"// Temporary variable for YUV value	\n"
 	"vec3 yuv;	\n"
 	"// Temporary variable for RGB value	\n"
@@ -134,62 +131,39 @@ static const char fShaderStr[] =
       "{                                                   \n"
       
 	  "vec4 luma_chroma;	       \n"
-	  "float pixelx, pixely;	       \n"
-	  "float x,y,u,v;       \n"
-	  "float xcoord, ycoord;       \n"
+	  "float xcoord;       \n"
 	  "float texture_width, texture_height;       \n"
 	  "float texel_width, texel_height;       \n"
 	  "vec3 yuv;		       \n"
 	  "vec4 res;		       \n"
-	  "pixelx = v_tex_coord.x;	\n"
-	  "pixely = v_tex_coord.y;	\n"
-	  "texture_width=float(1920);	\n"
-	  "texture_height=float(1080);	\n"
-	  "texel_width=1.0/texture_width; \n"
-	  "texel_height=1.0/texture_height; \n"	
-	  //"x = pixelx - (IMAGE_WIDTH * 0.5) / texture_width;	\n"
-	  "x=v_tex_coord.x-0.5;		\n"
-	  "y=v_tex_coord.y-0.5;		\n"
-	  "u=x*x -y*y;		\n"
-	  "v=2.0 * x * y;		\n"
-	  "u=u+0.5;		\n"
-	  "v=v+0.5;		\n"
-	  "u=v_tex_coord.x;		\n"
-	  "v=v_tex_coord.y;		\n"
 	  
-	  "pixelx=clamp(u,0.0, (1920.0-1.0) /1920.0);	\n"
-	  "pixely=clamp(v,0.0, (1080.0-1.0) /1080.0);	\n"
-	  "xcoord = floor (pixelx * 1920.0);	\n"
-  	  //"xcoord = floor (v_tex_coord.x * 1920.0);	\n"
-	  //"xcoord = floor (v_tex_coord.x * texture_width);	\n" 
-	  "luma_chroma = texture2D(s_luma_texture, vec2(pixelx,pixely));	\n"
-	  //"luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
-	  //"    yuv.x = texture2D(s_luma_texture, v_tex_coord).x;\n"
-	// just look up the brightness
+	  "texture_width=float(uimage_width);	\n"
+	  "texel_width=1.0/texture_width; \n"
+	  "xcoord = floor (v_tex_coord.x * texture_width);	\n" 
+	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
+	  // just look up the brightness
 	  "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
 	  
 	  "if (0.0 == mod(xcoord , 2.0)) \n"	// even
 	   " {				\n"
 	   "   yuv.y = luma_chroma.r;	\n"
-	   //"   yuv.z = texture2D(s_luma_texture,vec2(pixelx - texel_width, pixely)).r;	\n"
 	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r;	\n"
 	   " }	\n"
 	  "else \n"// odd
 	   " {	\n"
 	   "   yuv.z = luma_chroma.r;	\n"
-	   //"   yuv.y = texture2D(s_luma_texture,vec2(pixelx + texel_width, pixely)).r; 	\n"    
 	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r; 	\n"    
 	   "}	\n"
 	  
 	"yuv += offset;\n"
 	
-	//"res.r = yuv.x + 1.402 * yuv.z;	\n"
-	//"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
-	//"res.b = yuv.x + 1.772 * yuv.y;	\n"
+	"res.r = yuv.x + 1.402 * yuv.z;	\n"
+	"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
+	"res.b = yuv.x + 1.772 * yuv.y;	\n"
 	
-	"res.r = yuv.x + 1.5958 * yuv.z;	\n"
-	"res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	\n"
-	"res.b = yuv.x + 2.017 * yuv.y;	\n"
+	//"res.r = yuv.x + 1.5958 * yuv.z;	\n"
+	//"res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	\n"
+	//"res.b = yuv.x + 2.017 * yuv.y;	\n"
 	
 	//"res.r = yuv.x + 1.793 * yuv.z;	\n"
 	//"res.g = yuv.x - 0.213 * yuv.y - 0.534 * yuv.z;	\n"
@@ -497,7 +471,7 @@ int x11_process_pending_events(struct display_context *disp)
  * @param disp Display Data management structure with GPU handles.
  * @return error status of the setup. Value 0 is returned on success.
  */
-int render_nv12m_subs_tex(struct display_context *disp)
+int render_nv12m_subs_tex(struct display_context *disp, struct options* opt)
 {
 	GLenum error = GL_NO_ERROR;
 	int quit = 0;
@@ -519,16 +493,16 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 * The first buffer must contain luma data and the second must contain the chroma data.
 	 * This should be NV12 format with the chroma in CbCr order.
 	 */
-	
-	/* ali
-	if (disp->render_ctx.num_buffers < 2 ||
-		!disp->render_ctx.buffers[0] || !disp->render_ctx.buffers[1])
-	{
-		LOGS_ERR("Unable to continue no buffer address in display render_context\n");
-		return -1;
+	if(opt->ddump!=0){
+		/* ali
+		if (disp->render_ctx.num_buffers < 2 ||
+			!disp->render_ctx.buffers[0] || !disp->render_ctx.buffers[1])
+		{
+			LOGS_ERR("Unable to continue no buffer address in display render_context\n");
+			return -1;
+		}
+		*/
 	}
-	*/
-
 	/*
 	 * Set the rendered surface to match the full window resolution.
 	 * This routine will render to the entire window.
@@ -560,7 +534,7 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 */
 	glActiveTexture(GL_TEXTURE0);
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, 1920,1080/*disp->width, disp->height*/,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	
 	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceparams->image_width,
 	//  sourceparams->image_height,/*(GLenum)displaydata->pixelformat*/GL_LUMINANCE_ALPHA,GL_UNSIGNED_BYTE, sourceparams->captured.start);
@@ -568,6 +542,7 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
+	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
 
 	/*
 	 * Copy the chroma data from plane 1 to the s_chroma_texture texture in the GPU.
@@ -578,19 +553,19 @@ int render_nv12m_subs_tex(struct display_context *disp)
 	 * Each GL_LUMINCANCE_ALPHA lookup will contain one pixel of chroma.
 	 * The texture lookup will replicate the chroma values up to the total resolution.
 	 */
-	 
-	 /* ali
-	glActiveTexture(GL_TEXTURE1);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,
-		0, 0, disp->width/2, disp->height/2,
-		GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
-	error = glGetError();
-	glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-	*/
-	
-	/* Indicate that GL_TEXTURE1 is s_chroma_texture from previous lookup */
-	// ali glUniform1i(disp->location[1], 1);
-
+	 if(opt->ddump!=0){
+		/* ali
+		glActiveTexture(GL_TEXTURE1);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,
+			0, 0, disp->width/2, disp->height/2,
+			GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+		error = glGetError();
+		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+		*/
+		
+		/* Indicate that GL_TEXTURE1 is s_chroma_texture from previous lookup */
+		// ali glUniform1i(disp->location[1], 1);
+	 }
 	/*
 	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
 	 * The fourth parameter, indices value here is passed as null since the values are already
@@ -624,7 +599,7 @@ int render_nv12m_subs_tex(struct display_context *disp)
  * @note disp->render is assigned for the caller for the display render routine.
  * @return error status of the setup. Value 0 is returned on success.
  */
-int camera_nv12m_setup(struct display_context* disp, struct render_context *render_ctx)
+int camera_nv12m_setup(struct display_context* disp, struct render_context *render_ctx, struct options* opt)
 {
 	int ret;
 	GLenum error = 0;
@@ -688,8 +663,13 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 */
 	
 	
-	//ali disp->program = gles_load_program(nv12_vertex_code, nv12_fragment_code);
-	disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+	
+	if(opt->ddump==0){
+		disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+	}
+	else{
+		//ali disp->program = gles_load_program(nv12_vertex_code, nv12_fragment_code);
+	}
 	if (!disp->program)
 	{
 		LOGS_ERR("Unable to load program");
@@ -708,22 +688,27 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
 		goto cleanup;
 	}
-	
+	disp->location[2] = glGetUniformLocation(disp->program, "uimage_width");
+	if (disp->location[2] == -1)
+	{
+		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
+		goto cleanup;
+	}
 
 	/*
 	 * Get a handle to the s_chroma_texture variable in the fragment shader.
 	 * This handle is used to update the texture with each new camera frame.
 	 */
-	
-	/* ali
-	disp->location[1] = glGetUniformLocation(disp->program, "s_chroma_texture");
-	if (disp->location[1] == -1)
-	{
-		LOGS_ERR("Unable to get uniform location %s", string_gl_error(glGetError()));
-		return -1;
+	if(opt->ddump!=0){
+		/* ali
+		disp->location[1] = glGetUniformLocation(disp->program, "s_chroma_texture");
+		if (disp->location[1] == -1)
+		{
+			LOGS_ERR("Unable to get uniform location %s", string_gl_error(glGetError()));
+			return -1;
+		}
+		*/
 	}
-	*/
-	
 	
 	/*
 	 * Create a new vertex array. A group of vertices and indices stored in GPU memory.
@@ -783,7 +768,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * The resolution of the texture matches the number of active pixels.
 	 */
 	//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1920,1080/*disp->width, disp->height*/, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, /*1920,1080*/(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
    
 	error = glGetError();
 	if (error != GL_NO_ERROR) {
@@ -808,19 +793,20 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * The texture lookup will replicate the chroma values up to the total resolution.
 	 */
 	
-	/* ali
-	glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,
-		disp->width/2, disp->height/2, 0,
-		 GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
-	error = glGetError();
-	if (error != GL_NO_ERROR) {
-		LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
-		return -1;
-	}
-	*/
-	
+	if(opt->ddump!=0){
+		/* ali
+		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,
+			disp->width/2, disp->height/2, 0,
+			 GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
+		error = glGetError();
+		if (error != GL_NO_ERROR) {
+			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
+			return -1;
+		}
+		*/
+		}
 	/*
 	 * Select the nearest texture value when the location doesn't match the exact texture position.
 	 * This will occur since the texture is a quarter the size of the surface size.

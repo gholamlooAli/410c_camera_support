@@ -66,8 +66,6 @@ struct event_callbacks
  */
 struct render_context
 {
- int texture_width;
- int texture_height;
 	/** size of the buffers array. */
 	int num_buffers;
 	/** array of pointers to memory mapped video planes to display. */
