@@ -144,6 +144,7 @@ int unmap_buffers(struct capture_context *cap)
 	return ret;
 }
 
+
 /**
  * Map each video plane to user space buffers. Optionally export DMA file descriptors.
  * @param cap Capture data management structue with V4L2 buffer mapping.
@@ -215,6 +216,58 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 }
 
 
+
+
+int create_egl_image(struct capture_context *cap)
+{
+	int fd;
+	//unsigned stride = ALIGN(w, 32) * 4;
+	//void *map = buf_alloc(stride * h, &fd);
+	unsigned offset = 0;
+	unsigned stride = 0;
+	unsigned w = 640;
+	unsigned h = 480;
+	EGLImageKHR img[4];
+	EGLint attr[] = {
+			EGL_WIDTH, w,
+			EGL_HEIGHT, h,
+			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
+			EGL_DMA_BUF_PLANE0_FD_EXT, fd,
+			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+			EGL_NONE
+	};
+	fill(map, 0, w, h, stride);
+	for (int i = 0; i < cap->num_buf; i++)
+	{
+		fd=cap->buffers[i].dma_buf_fd[0];	//for plane 0
+
+		img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+	}
+	/* create test egl img: */
+	//img = create_image(w, h);
+
+	GCHK(glActiveTexture(GL_TEXTURE0));
+	GCHK(glGenTextures(1, &texturename));
+	GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
+	GCHK(glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img));
+
+	/* Note: cube turned black until these were defined. */
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE));
+
+	GCHK(texture_handle = glGetUniformLocation(program, "uTexture"));
+
+	GCHK(glUniform1i(texture_handle, 0)); /* '0' refers to texture unit 0. */
+
+	GCHK(glEnable(GL_CULL_FACE));
+	
+}
+
+
 /**
  * Queue all allocated V4L2 buffers in the driver to prepare for capture.
  * @param fd file descriptor for the V4L2 device.
@@ -268,6 +321,11 @@ int stop_stream(int fd)
  */
 int capture_display_yuv(struct capture_context *cap, struct display_context *disp, struct options* opt)
 {
+	struct timeval t1, t2;
+	struct timezone tz;
+	float deltatime,totaltime=0.0f;;
+	unsigned int frames=0;
+	
 	int ret = 0;
 	struct v4l2_buffer buf;
 	struct v4l2_plane planes[VIDEO_MAX_PLANES];
@@ -295,14 +353,26 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		return -1;
 	}
 
+	gettimeofday (&t1, &tz);
 	/* Continue until an error occurs or external signal requests an exit */
 	while(!ret && !signal_quit)
 	{
+		gettimeofday (&t2, &tz);
+		deltatime = (float)(t2.tv_sec - t1.tv_sec + (t2.tv_usec - t1.tv_usec) * 1e-6);
+		t1=t2;
+		totaltime += deltatime;
+		frames++;
+		if(totaltime > 2.0f){
+			printf("%4d frames rendered in %1.4f seconds -> FPS=%3.4f\n", frames, totaltime, frames/totaltime);
+			totaltime -= 2.0f;
+			frames=0;
+		}
 		ret = ioctl(cap->v4l2_fd, VIDIOC_DQBUF, &buf);
 		if (ret < 0) {
 			LOGS_ERR("DQBUF: %d - %s", errno, strerror(errno));
 			return errno;
 		}
+		
 		/* use the buffer index returned from dequeue to select the memory map planes for rendering */
 		disp->render_ctx.num_buffers = cap->num_planes;
 		for (int i = 0; i < cap->num_planes; i++)
@@ -441,8 +511,8 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
 	}
 	fmt.fmt.pix_mp.num_planes = cap->num_planes;
-	fmt.fmt.pix_mp.width = 1920;
-	fmt.fmt.pix_mp.height= 1080;
+	fmt.fmt.pix_mp.width = opt->im_width;//1920;
+	fmt.fmt.pix_mp.height= opt->im_height;//1080;
 	LOGS_DBG("cap->v4l2_fd= %d", cap->v4l2_fd);
 	ret = ioctl(cap->v4l2_fd, VIDIOC_S_FMT, &fmt);
 	if (ret < 0)

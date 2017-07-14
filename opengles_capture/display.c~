@@ -132,8 +132,8 @@ static const char fShaderStr[] =
       
 	  "vec4 luma_chroma;	       \n"
 	  "float xcoord;       \n"
-	  "float texture_width, texture_height;       \n"
-	  "float texel_width, texel_height;       \n"
+	  "float texture_width;       \n"
+	  "float texel_width;       \n"
 	  "vec3 yuv;		       \n"
 	  "vec4 res;		       \n"
 	  
@@ -536,8 +536,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt)
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	
-	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceparams->image_width,
-	//  sourceparams->image_height,/*(GLenum)displaydata->pixelformat*/GL_LUMINANCE_ALPHA,GL_UNSIGNED_BYTE, sourceparams->captured.start);
 	error = glGetError();
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
@@ -634,8 +632,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	(void)render_ctx;
 
 	/* force full screen window sizing */
-	disp->width = 1280;//640;//960;//640;//1920;
-	disp->height =960;//480;//540;//480;// 1080;
+	disp->width = 640;//1280;//640;//960;//640;//1920;
+	disp->height =480;//960;//480;//540;//480;// 1080;
 
 	/* Create a window and get the native windows and display handles required for EGL init */
 	ret = x11_create_window(disp);
