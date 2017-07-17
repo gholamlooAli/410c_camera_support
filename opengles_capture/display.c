@@ -40,11 +40,15 @@
 #include <EGL/eglext.h>
 
 #include <libdrm/drm_fourcc.h>
-
+#include "util.h"
 #include "display.h"
 #include "gles_egl_util.h"
 #include "log.h"
-
+//  Extensions
+//
+PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
+PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
 /**
  * Vertex shader, first stage produce texture and render positions.
  * Shaders included in code for simplicity but could be external files.
@@ -472,7 +476,7 @@ int x11_process_pending_events(struct display_context *disp)
  * @param disp Display Data management structure with GPU handles.
  * @return error status of the setup. Value 0 is returned on success.
  */
-int render_nv12m_subs_tex(struct display_context *disp, struct options* opt)
+int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, struct capture_context *cap)
 {
 	GLenum error = GL_NO_ERROR;
 	int quit = 0;
@@ -588,6 +592,127 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt)
 	return 0;
 }
 
+
+int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, struct capture_context *cap)
+{
+	GLenum error = GL_NO_ERROR;
+	int quit = 0;
+	EGLBoolean ret = 0;
+
+	/*
+	 * Process any events such as window resize before rendering on the window
+	 * One or more resize events may occur on startup as the window is switched to full screen mode.
+	 */
+	quit = x11_process_pending_events(disp);
+	if (quit)
+	{
+		x11_close_display(disp);
+		return 1;
+	}
+	
+	
+	
+	/*
+	 * Set the rendered surface to match the full window resolution.
+	 * This routine will render to the entire window.
+	 */
+	glViewport(0, 0, disp->width, disp->height);
+	/*
+	 * Only the color buffer is used. (The depth, and stencil buffers are unused.)
+	 * Set it to the background color before rendering.
+	 */
+	glClear(GL_COLOR_BUFFER_BIT);
+	/** Select the NV12 Shader program compiled in the setup routine */
+	glUseProgram(disp->program);
+	error = glGetError();
+	if (error != GL_NO_ERROR)
+	{
+		LOGS_ERR("Use program %s", string_gl_error(error));
+		return -1;
+	}
+
+	/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
+	glBindVertexArray(disp->vertex_array);
+
+	int myfd;
+	unsigned offset = 0;
+	unsigned stride = 0;
+	unsigned w = 640;
+	unsigned h = 480;
+	//GLuint texturename = 0, texture_handle;
+	EGLImageKHR img;
+	// Bind to extensions
+	eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+	eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+	glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+  
+	EGLint attr[] = {
+			EGL_WIDTH, w,
+			EGL_HEIGHT, h,
+			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
+			EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
+			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+			EGL_NONE
+	};
+	myfd=cap->buffers[0].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
+
+	img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+	
+	/* create test egl img: */
+	//img = create_image(w, h);
+
+	GCHK(glActiveTexture(GL_TEXTURE0));
+	//GCHK(glGenTextures(1, &texturename));
+	
+	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+	//GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
+	GCHK(glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img));
+
+	/* Note: cube turned black until these were defined. */
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE));
+	
+	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
+	glUniform1i(disp->location[0], 0);
+	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
+
+	/*
+
+	GCHK(texture_handle = glGetUniformLocation(program, "uTexture"));
+
+	GCHK(glUniform1i(texture_handle, 0)); /* '0' refers to texture unit 0. */
+
+	GCHK(glEnable(GL_CULL_FACE));
+	
+	error = glGetError();
+	/*
+	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
+	 * The fourth parameter, indices value here is passed as null since the values are already
+	 * available in the GPU memory through the vertex array
+	 * GL_TRIANGLES - draw each set of three vertices as an individual trianvle.
+	 */
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+	/** Select the default vertex array, allowing the applications array to be unbound */
+	glBindVertexArray(0);
+
+	/*
+	 * display the new camera frame after render is complete at the next vertical sync
+	 * This is drawn on the EGL surface which matches the full screen native window.
+	 */
+	ret = eglSwapBuffers(disp->egl_display, disp->egl_surface);
+	if (ret == EGL_FALSE)
+	{
+		LOGS_ERR("Unable to update surface %s", string_egl_error(eglGetError()));
+	}
+
+	return 0;
+}
+
+
 /**
  * Display and GPU setup for a YUV420 texture display.
  * Setup a full screen window and utilize EGL and OpenGLES to setup the display_context.
@@ -598,6 +723,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt)
  * @note disp->render is assigned for the caller for the display render routine.
  * @return error status of the setup. Value 0 is returned on success.
  */
+
 int camera_nv12m_setup(struct display_context* disp, struct render_context *render_ctx, struct options* opt)
 {
 	int ret;
@@ -780,6 +906,9 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 */
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
 
 	/*
 	 * Generate the space in the GPU for the chroma texture, don't initialize the data.
@@ -796,23 +925,27 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		/* ali
 		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,
-			disp->width/2, disp->height/2, 0,
-			 GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,disp->width/2, disp->height/2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
 		error = glGetError();
 		if (error != GL_NO_ERROR) {
 			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
 			return -1;
 		}
+		/*
+		 * Select the nearest texture value when the location doesn't match the exact texture position.
+		 * This will occur since the texture is a quarter the size of the surface size.
+		 */
+		
+		/*
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+
 		*/
 		}
-	/*
-	 * Select the nearest texture value when the location doesn't match the exact texture position.
-	 * This will occur since the texture is a quarter the size of the surface size.
-	 */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
+	
 	/*
 	 * Select an orange color that is distict from the native window.
 	 * If the render fails an orange screen will appear.
@@ -821,8 +954,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	glClearColor ( 1.0f, 0.6f, 0.0f, 0.0f );
 
 	/* Finally save the pointer to the render function that will be used to update the surface */
-	disp->render_func = render_nv12m_subs_tex;
-
+	//disp->render_func = render_nv12m_subs_tex;
+	disp->render_func = render2_nv12m_subs_tex;
 	return 0;
 cleanup:
 	x11_close_display(disp);

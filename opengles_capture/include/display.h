@@ -79,7 +79,7 @@ struct render_context
  * Each program use may require a different render function.
  * @param display_context data management structure for display routines.
  */
-typedef int (*RENDER) (struct display_context*);
+typedef int (*RENDER) (struct display_context*, struct options* opt, struct capture_context *cap);
 
 /**
  * Data management structure for display routines.
@@ -95,12 +95,13 @@ struct display_context
 	EGLSurface egl_surface;
 	/** handle to the display that will be drawn on for EGL API. */
 	EGLDisplay egl_display;
-
+ 
 	/** Height of the surface to be drawn on. */
 	EGLint height;
 	/** Width of the surface to be drawn on. */
 	EGLint width;
 
+ uint32_t cur_bufferindex;
 	/** Handle to the vertex array, or collection of indices and vertices. */
 	GLuint vertex_array;
 	/** List of handles to vertex buffers, vertices and indices stored in GPU memory. */

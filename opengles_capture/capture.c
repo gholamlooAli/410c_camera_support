@@ -218,54 +218,6 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 
 
 
-int create_egl_image(struct capture_context *cap)
-{
-	int fd;
-	//unsigned stride = ALIGN(w, 32) * 4;
-	//void *map = buf_alloc(stride * h, &fd);
-	unsigned offset = 0;
-	unsigned stride = 0;
-	unsigned w = 640;
-	unsigned h = 480;
-	EGLImageKHR img[4];
-	EGLint attr[] = {
-			EGL_WIDTH, w,
-			EGL_HEIGHT, h,
-			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
-			EGL_DMA_BUF_PLANE0_FD_EXT, fd,
-			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-			EGL_NONE
-	};
-	fill(map, 0, w, h, stride);
-	for (int i = 0; i < cap->num_buf; i++)
-	{
-		fd=cap->buffers[i].dma_buf_fd[0];	//for plane 0
-
-		img[i]= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-	}
-	/* create test egl img: */
-	//img = create_image(w, h);
-
-	GCHK(glActiveTexture(GL_TEXTURE0));
-	GCHK(glGenTextures(1, &texturename));
-	GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
-	GCHK(glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img));
-
-	/* Note: cube turned black until these were defined. */
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE));
-
-	GCHK(texture_handle = glGetUniformLocation(program, "uTexture"));
-
-	GCHK(glUniform1i(texture_handle, 0)); /* '0' refers to texture unit 0. */
-
-	GCHK(glEnable(GL_CULL_FACE));
-	
-}
 
 
 /**
@@ -378,12 +330,13 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		for (int i = 0; i < cap->num_planes; i++)
 		{
 			disp->render_ctx.buffers[i] = cap->buffers[buf.index].addr[i];
+			disp->cur_bufferindex=buf.index;
 		}
 		/*
 		 * Render the planes to the display.
 		 * Return value inidcates error or request to exit the capture-display loop.
 		 */
-		ret = disp->render_func(disp);
+		ret = disp->render_func(disp, opt, cap);
 		if (ret < 0) {
 			LOGS_ERR("Error during display aborting capture");
 			return errno;
