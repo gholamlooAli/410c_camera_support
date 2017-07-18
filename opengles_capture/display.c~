@@ -146,17 +146,18 @@ static const char fShaderStr[] =
 	  "xcoord = floor (v_tex_coord.x * texture_width);	\n" 
 	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
 	  // just look up the brightness
-	  "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
+	    "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
+	  
 	  
 	  "if (0.0 == mod(xcoord , 2.0)) \n"	// even
 	   " {				\n"
 	   "   yuv.y = luma_chroma.r;	\n"
-	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).r;	\n"
+	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).g;	\n"
 	   " }	\n"
 	  "else \n"// odd
 	   " {	\n"
 	   "   yuv.z = luma_chroma.r;	\n"
-	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).r; 	\n"    
+	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	\n"    
 	   "}	\n"
 	  
 	"yuv += offset;\n"
@@ -181,7 +182,66 @@ static const char fShaderStr[] =
       "}                                                   \n";
 
 
-  
+ static const char fShaderStr2[] =  
+      "#version 300 es 			\n"
+      
+		
+       "precision mediump float;                            \n"
+       "in vec2 v_tex_coord;                            \n"
+      	
+	"uniform mediump int uimage_width;			\n"	
+	"uniform sampler2D s_luma_texture;                        \n"
+	"layout (location=0) out vec4 out_color;   \n"
+	"// Additive offset for BT656 YUV to RGB transform.	\n"
+	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
+	"// Temporary variable for YUV value	\n"
+	"vec3 yuv;	\n"
+	"// Temporary variable for RGB value	\n"
+	"vec3 rgb;	\n"
+	
+      "void main()                                         \n"
+	
+
+      "{                                                   \n"
+      
+	  "vec4 luma_chroma;	       \n"
+	  "float xcoord;       \n"
+	  "float texture_width;       \n"
+	  "float texel_width;       \n"
+	  "vec3 yuv;		       \n"
+	  "vec4 res;		       \n"
+	  
+	  "texture_width=float(uimage_width);	\n"
+	  "texel_width=1.0/texture_width; \n"
+	  "xcoord = floor (v_tex_coord.x * texture_width);	\n" 
+	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
+	  // just look up the brightness
+	   
+	  "   yuv.y = luma_chroma.b;	\n"
+	  "   yuv.z = luma_chroma.r;	\n"
+	   
+	  "if (0.0 != mod(xcoord , 2.0)) \n"	// even
+	   " {				\n"
+	   "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
+	   " }	\n"
+	  "else \n"// odd
+	   " {	\n"
+	   "yuv.x = (luma_chroma.g - 0.0625) * 1.1643;	\n"
+	   "}	\n"
+	  
+	"yuv += offset;\n"
+	
+	"res.r = yuv.x + 1.402 * yuv.z;	\n"
+	"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
+	"res.b = yuv.x + 1.772 * yuv.y;	\n"
+	
+	
+	"res.a = 1.0;				\n"
+	"    out_color = clamp(res,vec4(0),vec4(1));\n"
+	
+      "}                                                   \n";
+
+ 
 
 /**
  * Create a full screen native window and setup events to watch.
@@ -636,9 +696,10 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 
 	int myfd;
 	unsigned offset = 0;
-	unsigned stride = ALIGN(640,32)*4;
-	unsigned w = 640;
-	unsigned h = 480;
+	unsigned w = 1920/2;//1280;//640;
+	unsigned h = 1080;//960;//480;
+	unsigned stride = ALIGN(w, 32)*4;
+	
 	myfd=cap->buffers[disp->cur_bufferindex].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
 
 	//GLuint texturename = 0, texture_handle;
@@ -651,7 +712,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	EGLint attr[] = {
 			EGL_WIDTH, w,
 			EGL_HEIGHT, h,
-			//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_UYVY,
+			//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
 			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
 			EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
 			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
@@ -660,25 +721,25 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	};
 	
 	img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-	ECHK(img=img);
+	//ECHK(img=img);
 	if(img==EGL_NO_IMAGE_KHR)
 		printf(" can not make egl image\n");
 	/* create test egl img: */
 	//img = create_image(w, h);
 
-	GCHK(glActiveTexture(GL_TEXTURE0));
+	glActiveTexture(GL_TEXTURE0);
 	//GCHK(glGenTextures(1, &texturename));
 	
-	GCHK(glBindTexture(GL_TEXTURE_2D, disp->texture[0]));
+	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	//GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
-	GCHK(glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img));
+	glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
 
 	/* Note: cube turned black until these were defined. */
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-	GCHK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
 	
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
@@ -690,7 +751,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 
 	GCHK(glUniform1i(texture_handle, 0)); /* '0' refers to texture unit 0. */
 
-	GCHK(glEnable(GL_CULL_FACE));
+	glEnable(GL_CULL_FACE);
 	
 	error = glGetError();
 	/*
@@ -763,8 +824,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	(void)render_ctx;
 
 	/* force full screen window sizing */
-	disp->width = 640;//1280;//640;//960;//640;//1920;
-	disp->height =480;//960;//480;//540;//480;// 1080;
+	disp->width = 1440;//1920;//1280;//640;//960;//640;//1920;
+	disp->height =720;//1080;//960;//480;//540;//480;// 1080;
 
 	/* Create a window and get the native windows and display handles required for EGL init */
 	ret = x11_create_window(disp);
@@ -794,7 +855,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	
 	if(opt->ddump==0){
-		disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+		//disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+		disp->program = gles_load_program(nv12_vertex_code, fShaderStr2);
 	}
 	else{
 		//ali disp->program = gles_load_program(nv12_vertex_code, nv12_fragment_code);
