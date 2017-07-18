@@ -52,7 +52,7 @@ out/main.o: main.c /usr/include/stdc-predef.h \
  /usr/include/aarch64-linux-gnu/asm/posix_types.h \
  /usr/include/asm-generic/posix_types.h /usr/include/linux/v4l2-common.h \
  /usr/include/linux/v4l2-controls.h include/display.h include/options.h \
- include/GLES3/gl3.h include/GLES3/gl3platform.h \
+ include/capture.h include/GLES3/gl3.h include/GLES3/gl3platform.h \
  include/KHR/khrplatform.h include/EGL/egl.h include/EGL/eglplatform.h \
  /usr/include/X11/Xlib.h /usr/include/X11/X.h \
  /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \

@@ -29,7 +29,7 @@
 #define DISPLAY_H__
 
 #include "options.h"
-
+#include "capture.h"
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -79,7 +79,7 @@ struct render_context
  * Each program use may require a different render function.
  * @param display_context data management structure for display routines.
  */
-typedef int (*RENDER) (struct display_context*, struct options* opt, struct capture_context *cap);
+typedef int (*RENDER) (struct display_context*, struct options* , struct capture_context *);
 
 /**
  * Data management structure for display routines.

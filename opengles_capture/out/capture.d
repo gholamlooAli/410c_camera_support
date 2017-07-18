@@ -71,7 +71,7 @@ out/capture.o: capture.c /usr/include/stdc-predef.h \
  /usr/include/aarch64-linux-gnu/sys/stat.h /usr/include/linux/videodev2.h \
  /usr/include/linux/v4l2-common.h /usr/include/linux/v4l2-controls.h \
  include/options.h /usr/include/aarch64-linux-gnu/sys/queue.h \
- include/capture.h include/display.h include/options.h \
+ include/capture.h include/display.h include/options.h include/capture.h \
  include/GLES3/gl3.h include/GLES3/gl3platform.h \
  include/KHR/khrplatform.h include/EGL/egl.h include/EGL/eglplatform.h \
  /usr/include/X11/Xlib.h /usr/include/X11/X.h \

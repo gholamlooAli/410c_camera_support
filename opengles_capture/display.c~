@@ -636,9 +636,11 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 
 	int myfd;
 	unsigned offset = 0;
-	unsigned stride = 0;
+	unsigned stride = ALIGN(640,32)*4;
 	unsigned w = 640;
 	unsigned h = 480;
+	myfd=cap->buffers[disp->cur_bufferindex].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
+
 	//GLuint texturename = 0, texture_handle;
 	EGLImageKHR img;
 	// Bind to extensions
@@ -649,23 +651,25 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	EGLint attr[] = {
 			EGL_WIDTH, w,
 			EGL_HEIGHT, h,
+			//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_UYVY,
 			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
 			EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
 			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
 			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
 			EGL_NONE
 	};
-	myfd=cap->buffers[0].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-
-	img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
 	
+	img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+	ECHK(img=img);
+	if(img==EGL_NO_IMAGE_KHR)
+		printf(" can not make egl image\n");
 	/* create test egl img: */
 	//img = create_image(w, h);
 
 	GCHK(glActiveTexture(GL_TEXTURE0));
 	//GCHK(glGenTextures(1, &texturename));
 	
-	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+	GCHK(glBindTexture(GL_TEXTURE_2D, disp->texture[0]));
 	//GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
 	GCHK(glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img));
 
