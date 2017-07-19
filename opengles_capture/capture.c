@@ -298,7 +298,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 	}
 
 	/* Setup the OpenGL display, disp->render will be assigned for future display calls */
-	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt);
+	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt, cap);
 	if (ret)
 	{
 		LOGS_ERR("Error setting up display aborting capture");
@@ -431,7 +431,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	 * NV12 is used by the render routine which has two planes.
 	 * First plane is luma, second plane is chroma at 1/4 resolution.
 	 */
-	if(opt->ddump==0)
+	if(opt->ddump)
 	{
 		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 		cap->num_planes = 1;
@@ -456,7 +456,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 		exit(-errno);
 	}
 	*/
-	if(opt->ddump==0)
+	if(opt->ddump)
 	{
 		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
 	}

@@ -298,7 +298,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 	}
 
 	/* Setup the OpenGL display, disp->render will be assigned for future display calls */
-	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt);
+	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt, cap);
 	if (ret)
 	{
 		LOGS_ERR("Error setting up display aborting capture");
@@ -330,7 +330,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		for (int i = 0; i < cap->num_planes; i++)
 		{
 			disp->render_ctx.buffers[i] = cap->buffers[buf.index].addr[i];
-			disp->render_ctx.cur_bufferindex=buf.index;
+			disp->cur_bufferindex=buf.index;
 		}
 		/*
 		 * Render the planes to the display.

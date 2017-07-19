@@ -100,7 +100,7 @@ struct display_context
 	EGLint height;
 	/** Width of the surface to be drawn on. */
 	EGLint width;
-
+ EGLImageKHR img[4];
  uint32_t cur_bufferindex;
 	/** Handle to the vertex array, or collection of indices and vertices. */
 	GLuint vertex_array;
@@ -132,7 +132,7 @@ struct display_context
  * @note disp->render is assigned for the caller for the display render routine.
  * @return error status of the setup. Value 0 is returned on success.
  */
-int camera_nv12m_setup(struct display_context* disp, struct render_context *render_ctx, struct options* opt);
+int camera_nv12m_setup(struct display_context* disp, struct render_context *render_ctx, struct options* opt, struct capture_context *cap);
 
 
 /**

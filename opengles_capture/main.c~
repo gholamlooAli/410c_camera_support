@@ -104,10 +104,13 @@ void set_default_options(struct options *opt)
 	opt->subdev_name = (char*)DEFAULT_SUBDEVICE;
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
-	opt->dma_export = false;
-	opt->ddump=false;
+	opt->dma_export = true;
+	opt->ddump=true;
+	opt->eglimage=true;
 	opt->im_width=1920;
 	opt->im_height=1080;
+	opt->win_width=640;//1440;//1920;//1280;//640;//960;//640;//1920;
+	opt->win_height=480;//720;//1080;//960;//480;//540;//480;// 1080;
 }
 
 
@@ -212,7 +215,7 @@ int main(int argc, char * const argv[])
 	struct display_context disp_context;
 	struct display_context *disp = &disp_context;
 	int ret = 0;
-
+	
 
 	memset(disp, 0, sizeof(*disp));
 	memset(cap, 0, sizeof(*cap));

@@ -73,7 +73,10 @@ struct usage {
 struct options {
  int im_width;
  int im_height;
+ int win_width;
+ int win_height;
  int ddump;
+ int eglimage;
 	/** number of buffers to capture. */
 	int capture_count;
 	/** Number of buffers to allocate from the v4l2 device. */
