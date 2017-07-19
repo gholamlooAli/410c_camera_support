@@ -273,9 +273,9 @@ int stop_stream(int fd)
  */
 int capture_display_yuv(struct capture_context *cap, struct display_context *disp, struct options* opt)
 {
-	struct timeval t1, t2;
+	struct timeval t1, t2,t3,t4,t5,t6;
 	struct timezone tz;
-	float deltatime,totaltime=0.0f;;
+	float deltatime,deltatime2,totaltime=0.0f;;
 	unsigned int frames=0;
 	
 	int ret = 0;
@@ -298,7 +298,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 	}
 
 	/* Setup the OpenGL display, disp->render will be assigned for future display calls */
-	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt);
+	ret = camera_nv12m_setup(disp, &disp->render_ctx, opt, cap);
 	if (ret)
 	{
 		LOGS_ERR("Error setting up display aborting capture");
@@ -319,11 +319,16 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			totaltime -= 2.0f;
 			frames=0;
 		}
+		
+		gettimeofday (&t5, &tz);
 		ret = ioctl(cap->v4l2_fd, VIDIOC_DQBUF, &buf);
 		if (ret < 0) {
 			LOGS_ERR("DQBUF: %d - %s", errno, strerror(errno));
 			return errno;
 		}
+		gettimeofday (&t6, &tz);
+		deltatime2 = (float)(t6.tv_sec - t5.tv_sec + (t6.tv_usec - t5.tv_usec) * 1e-6);
+		printf("deltatimeDQBUF=%1.4f seconds \n", deltatime2);
 		
 		/* use the buffer index returned from dequeue to select the memory map planes for rendering */
 		disp->render_ctx.num_buffers = cap->num_planes;
@@ -332,10 +337,13 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			disp->render_ctx.buffers[i] = cap->buffers[buf.index].addr[i];
 			disp->cur_bufferindex=buf.index;
 		}
+		//printf("the buffer index=%d\n",disp->cur_bufferindex);
 		/*
 		 * Render the planes to the display.
 		 * Return value inidcates error or request to exit the capture-display loop.
 		 */
+		gettimeofday (&t3, &tz);
+		
 		ret = disp->render_func(disp, opt, cap);
 		if (ret < 0) {
 			LOGS_ERR("Error during display aborting capture");
@@ -344,7 +352,12 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			LOGS_INF("Exiting display loop normally");
 			break;
 		}
-
+		gettimeofday (&t4, &tz);
+		deltatime2 = (float)(t4.tv_sec - t3.tv_sec + (t4.tv_usec - t3.tv_usec) * 1e-6);
+		printf("deltatime2=%1.4f seconds \n", deltatime2);
+		//if(opt->eglimage){
+			//usleep(10000);
+	//	}
 		/* Requeue the last buffer, the memory should be duplicated in the GPU and no longer needed. */
 		ret = ioctl(cap->v4l2_fd, VIDIOC_QBUF, &buf);
 	}
@@ -431,7 +444,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	 * NV12 is used by the render routine which has two planes.
 	 * First plane is luma, second plane is chroma at 1/4 resolution.
 	 */
-	if(opt->ddump==0)
+	if(opt->ddump)
 	{
 		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 		cap->num_planes = 1;
@@ -456,7 +469,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 		exit(-errno);
 	}
 	*/
-	if(opt->ddump==0)
+	if(opt->ddump)
 	{
 		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
 	}

@@ -105,9 +105,12 @@ void set_default_options(struct options *opt)
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
 	opt->dma_export = true;
-	opt->ddump=false;
+	opt->ddump=true;
+	opt->eglimage=true;
 	opt->im_width=1920;
 	opt->im_height=1080;
+	opt->win_width=1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;
+	opt->win_height=1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
 }
 
 

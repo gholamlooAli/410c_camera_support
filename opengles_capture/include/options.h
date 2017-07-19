@@ -39,7 +39,7 @@ extern "C" {
  */
 #define DEFAULT_COUNT 5
 #define DEFAULT_DEVICE "/dev/video3"
-#define DEFAULT_BUFFER_COUNT 4
+#define DEFAULT_BUFFER_COUNT 8
 #define DEFAULT_SUBDEVICE "/dev/v4l-subdev10"
 
 #define CAPTURE_DEV		'd'
@@ -73,7 +73,10 @@ struct usage {
 struct options {
  int im_width;
  int im_height;
+ int win_width;
+ int win_height;
  int ddump;
+ int eglimage;
 	/** number of buffers to capture. */
 	int capture_count;
 	/** Number of buffers to allocate from the v4l2 device. */

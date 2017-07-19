@@ -29,7 +29,7 @@
 #define DISPLAY_H__
 
 #include "options.h"
-
+#include "capture.h"
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -100,7 +100,7 @@ struct display_context
 	EGLint height;
 	/** Width of the surface to be drawn on. */
 	EGLint width;
-
+ EGLImageKHR img[4];
  uint32_t cur_bufferindex;
 	/** Handle to the vertex array, or collection of indices and vertices. */
 	GLuint vertex_array;
