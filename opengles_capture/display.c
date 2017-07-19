@@ -1040,7 +1040,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 			if(disp->img[i]==EGL_NO_IMAGE_KHR)
 				printf(" can not make egl image[%d]\n",i);
 			/* create test egl img: */
-		glClear(GL_COLOR_BUFFER_BIT);
+		//glClear(GL_COLOR_BUFFER_BIT);
+		//}
 		disp->render_func = render2_nv12m_subs_tex;
 	}
 	else{
