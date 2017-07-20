@@ -91,6 +91,11 @@ void usage(char * const argv[])
 	TAILQ_FOREACH(usage, &g_program_options.usage_head, usage_entry)
 		printf("\t%s - %s\n", usage->name, usage->description);
 	printf("-v, --verbose\n");
+	printf("-e , --eglimage  !=1 for zero copy buffer =1 for copy v4L2 buffer to memory(glTexSubImage2D)  default=zero copy\n");
+	printf("-0, --win_width  the width  for display/view window  default=1440\n");
+	printf("-1, --win_height the height for display/view window  default=810\n");
+	printf("-2, --im_width  the width  for texture  default=1920\n");
+	printf("-3, --im_height the height for texture  default=1080\n");
 }
 
 /**
@@ -133,18 +138,46 @@ int get_options(struct options *opt, int argc, char * const argv[])
 		{"usage",			required_argument,	0, PROGRAM_USE },
 		{"help",			no_argument, 		0, 'h'},
 		{"verbose",			optional_argument,	0, 'v'},
+		{"eglimage",			required_argument,	0, 'e'},
+		{"win_width",			optional_argument,	0, '0'},
+		{"win_height",			optional_argument,	0, '1'},
+		{"im_width",			optional_argument,	0, '2'},
+		{"im_height",			optional_argument,	0, '3'},
 		{0},
 	};
 
 	set_default_options(opt);
 
 	while(1)
-	{
-		o = getopt_long(argc, argv, "d:s:p:n:u:hv", long_options, NULL);
+	{	// : means required_argument
+		o = getopt_long(argc, argv, "d:s:p:n:u:hve:0123", long_options, NULL);
 		if (o == -1) break;
 
 		switch (o)
 		{
+			case 	'e':
+				if(atoi(optarg)==1)
+					opt->eglimage=false;
+				break;
+			
+			
+			case 	'0':
+				opt->win_width=atoi(optarg);
+				break;
+			
+			case 	'1':
+				opt->win_height=atoi(optarg);
+				break;
+			
+			case 	'2':
+				opt->im_width=atoi(optarg);
+				break;
+			
+			case 	'3':
+				opt->im_height=atoi(optarg);
+				break;
+			
+			
 			case CAPTURE_DEV:
 				opt->dev_name = optarg;
 				break;
