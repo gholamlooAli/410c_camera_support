@@ -699,9 +699,9 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	unsigned h = 1080;//960;//480;
 	unsigned stride = ALIGN(w, 32)*4;
 	unsigned  bufind=disp->cur_bufferindex;	
-	bufind+=1;
-	if(bufind==(unsigned)opt->buffer_count)
-		bufind=0;
+	//bufind+=1;
+	//if(bufind==(unsigned)opt->buffer_count)
+	//	bufind=0;
 	
 	myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
 	EGLImageKHR img;

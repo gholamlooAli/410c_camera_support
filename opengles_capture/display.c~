@@ -732,7 +732,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	//GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
-	glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)disp->img[disp->cur_bufferindex]);
+	glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
 
 	/* Note: cube turned black until these were defined. */
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

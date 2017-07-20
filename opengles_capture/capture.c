@@ -275,7 +275,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 {
 	struct timeval t1, t2,t3,t4,t5,t6;
 	struct timezone tz;
-	float deltatime,deltatime2,totaltime=0.0f;;
+	float deltatime,deltatime2,deltatime3,totaltime=0.0f,totaltime3=0.0f;
 	unsigned int frames=0;
 	
 	int ret = 0;
@@ -315,8 +315,9 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		totaltime += deltatime;
 		frames++;
 		if(totaltime > 2.0f){
-			printf("%4d frames rendered in %1.4f seconds -> FPS=%3.4f\n", frames, totaltime, frames/totaltime);
+			printf("%4d frames rendered in %1.4f seconds -> FPS=%3.4f, rendering time average(msec)=%3.4f\n", frames, totaltime, frames/totaltime, (totaltime3*1000.0f)/frames);
 			totaltime -= 2.0f;
+			totaltime3=0.0f;
 			frames=0;
 		}
 		
@@ -328,7 +329,17 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		}
 		gettimeofday (&t6, &tz);
 		deltatime2 = (float)(t6.tv_sec - t5.tv_sec + (t6.tv_usec - t5.tv_usec) * 1e-6);
-		printf("deltatimeDQBUF=%1.4f seconds \n", deltatime2);
+		if(opt->eglimage){
+			int ii=(int)(deltatime2*200.0);
+			if(ii==0){
+				printf("deltatimeDQBUF=%1.4f seconds buffer%d eleminated\n", deltatime2,buf.index);
+				if(frames>0)
+					frames--;
+				goto xxx;
+			}
+		}
+			
+		//printf("deltatimeDQBUF=%1.4f seconds \n", deltatime2);
 		
 		/* use the buffer index returned from dequeue to select the memory map planes for rendering */
 		disp->render_ctx.num_buffers = cap->num_planes;
@@ -353,11 +364,13 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			break;
 		}
 		gettimeofday (&t4, &tz);
-		deltatime2 = (float)(t4.tv_sec - t3.tv_sec + (t4.tv_usec - t3.tv_usec) * 1e-6);
-		printf("deltatime2=%1.4f seconds \n", deltatime2);
+		deltatime3 = (float)(t4.tv_sec - t3.tv_sec + (t4.tv_usec - t3.tv_usec) * 1e-6);
+		totaltime3 += deltatime3;
+		//printf("rendering time=%1.4f seconds \n", deltatime3);
 		//if(opt->eglimage){
 			//usleep(10000);
 	//	}
+		xxx:
 		/* Requeue the last buffer, the memory should be duplicated in the GPU and no longer needed. */
 		ret = ioctl(cap->v4l2_fd, VIDIOC_QBUF, &buf);
 	}
