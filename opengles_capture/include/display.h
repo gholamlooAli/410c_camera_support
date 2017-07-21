@@ -96,6 +96,8 @@ struct display_context
 	/** handle to the display that will be drawn on for EGL API. */
 	EGLDisplay egl_display;
  
+ /** command for image processing send to the fragment shader. */
+	EGLint im_process;
 	/** Height of the surface to be drawn on. */
 	EGLint height;
 	/** Width of the surface to be drawn on. */

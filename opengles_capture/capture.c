@@ -725,6 +725,31 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 	{
 		switch (keys[0])
 		{
+			case 'c':
+				disp->im_process=0;
+				break;
+			case 'k'://gray
+				disp->im_process=1;
+				break;
+			case 'y':
+				disp->im_process=2;
+				break;
+			case 'u':
+				disp->im_process=3;
+				break;
+			case 'v':
+				disp->im_process=4;
+				break;
+			case 'r':
+				disp->im_process=5;
+				break;
+			case 'g':
+				disp->im_process=6;
+				break;
+			case 'b':
+				disp->im_process=7;
+				break;
+			
 			case 'h':
 				print_key_functions();
 				break;

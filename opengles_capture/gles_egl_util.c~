@@ -26,10 +26,9 @@
  */
 #include <stdlib.h>
 #include <string.h>
-
+#include <assert.h>
 #include "gles_egl_util.h"
 #include "log.h"
-
 
 const char* string_egl_error(EGLint error)
 {
@@ -85,6 +84,60 @@ const char* string_gl_error(GLenum error)
 	return unknown;
 }
 
+GLuint gles_load_shader_file(GLenum shader_type, const char *filename)
+{
+	GLuint shader = 0;
+	GLint status;
+
+	FILE* f = fopen(filename, "rb");
+	assert(f);
+	fseek(f,0,SEEK_END);
+	int sz = ftell(f);
+	fseek(f,0,SEEK_SET);
+	//GLchar* Src;
+	//cheeky bit of code to read the whole file into memory
+	printf("size of file=%d\n",sz);
+	
+	GLchar *Src=malloc(2000);
+	//assert(!Src);
+	fread(Src,1,sz,f);
+	Src[sz] = 0; //null terminate it!
+	fclose(f);
+
+	shader = glCreateShader(shader_type);
+	if (!shader)
+	{
+		LOGS_ERR("Unable to create shader %s", string_gl_error(glGetError()));
+		return 0;
+	}
+	//glShaderSource(shader, 1, &ccode, NULL);
+	glShaderSource(shader, 1, (const GLchar**)&Src, 0);
+	glCompileShader(shader);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	if (!status)
+	{
+		GLint length;
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+		if (length)
+		{
+			char* error = malloc(length);
+			if (error)
+			{
+				glGetShaderInfoLog(shader, length, NULL, error);
+				LOGS_ERR("Unable to compile shader: '%s'", error);
+			}
+
+			free(error);
+		}
+		else
+		{
+			LOGS_ERR("Unable to compile shader, unknown error");
+		}
+		glDeleteShader(shader);
+		return 0;
+	}
+	return shader;
+}
 GLuint gles_load_shader(GLenum shader_type, const char *code)
 {
 	GLuint shader = 0;
@@ -131,7 +184,7 @@ GLuint gles_load_program(const char *vertex_code, const char *fragment_code)
 	GLuint program;
 	GLint status;
 	vertex_shader = gles_load_shader(GL_VERTEX_SHADER, vertex_code);
-	fragment_shader = gles_load_shader(GL_FRAGMENT_SHADER, fragment_code);
+	fragment_shader = gles_load_shader_file(GL_FRAGMENT_SHADER, fragment_code);
 	if (!vertex_shader || !fragment_shader)
 	{
 		LOGS_ERR("Unable to create shader");
@@ -153,7 +206,7 @@ GLuint gles_load_program(const char *vertex_code, const char *fragment_code)
 	{
 		int mm,ll;
 		glGetProgramiv(program,GL_INFO_LOG_LENGTH,&mm);
-		char* log=new char[mm];
+		char log[mm];
 		glGetProgramInfoLog(program,mm,&ll,log);
 		LOGS_ERR("Unable to link program%s",log);
 		glDeleteProgram(program);

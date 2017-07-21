@@ -31,13 +31,41 @@
 #include <GLES3/gl2ext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+class GfxShader
+{
+	GLchar* Src;
+	GLuint Id;
+	GLuint GlShaderType;
 
+public:
+
+	GfxShader() : Src(NULL), Id(0), GlShaderType(0) {}
+	~GfxShader() { if(Src) delete[] Src; }
+
+	bool LoadVertexShader(const char* filename);
+	bool LoadFragmentShader(const char* filename);
+	GLuint GetId() { return Id; }
+};
+
+class GfxProgram
+{
+	GfxShader* VertexShader;
+	GfxShader* FragmentShader;
+	GLuint Id;
+
+public:
+
+	GfxProgram() {}
+	~GfxProgram() {}
+
+	bool Create(GfxShader* vertex_shader, GfxShader* fragment_shader);
+	GLuint GetId() { return Id; }
+};
 const char* string_egl_error(EGLint error);
 const char* string_gl_error(GLenum error);
 GLuint gles_load_shader(GLenum shader_type, const char *code);
-GLuint gles_load_shader_file(GLenum shader_type, const char *filename);
-
 GLuint gles_load_program(const char *vertex_code, const char *fragment_code);
+
 void *gles_load_extension(const char* extension, const char* procedure_name);
 void *egl_load_extension(EGLDisplay display, const char* extension, const char* procedure_name);
 

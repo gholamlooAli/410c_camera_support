@@ -22,8 +22,8 @@ out/gles_egl_util.o: gles_egl_util.c /usr/include/stdc-predef.h \
  /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h \
  /usr/include/aarch64-linux-gnu/bits/stdlib-float.h /usr/include/string.h \
  /usr/include/xlocale.h /usr/include/aarch64-linux-gnu/bits/string.h \
- /usr/include/aarch64-linux-gnu/bits/string2.h include/gles_egl_util.h \
- include/GLES3/gl3.h include/GLES3/gl3platform.h \
+ /usr/include/aarch64-linux-gnu/bits/string2.h /usr/include/assert.h \
+ include/gles_egl_util.h include/GLES3/gl3.h include/GLES3/gl3platform.h \
  include/KHR/khrplatform.h \
  /usr/lib/gcc/aarch64-linux-gnu/6/include/stdint.h /usr/include/stdint.h \
  /usr/include/aarch64-linux-gnu/bits/wchar.h include/GLES3/gl2ext.h \

@@ -366,7 +366,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 		gettimeofday (&t4, &tz);
 		deltatime3 = (float)(t4.tv_sec - t3.tv_sec + (t4.tv_usec - t3.tv_usec) * 1e-6);
 		totaltime3 += deltatime3;
-		printf("rendering time=%1.4f seconds \n", deltatime3);
+		//printf("rendering time=%1.4f seconds \n", deltatime3);
 		//if(opt->eglimage){
 			//usleep(10000);
 	//	}
@@ -725,6 +725,31 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 	{
 		switch (keys[0])
 		{
+			case 'c':
+				disp->im_process=0;
+				break;
+			case 'g':
+				disp->im_process=1;
+				break;
+			case 'y':
+				disp->im_process=2;
+				break;
+			case 'u':
+				disp->im_process=3;
+				break;
+			case 'v':
+				disp->im_process=4;
+				break;
+			case 'r':
+				disp->im_process=5;
+				break;
+			case 'g':
+				disp->im_process=6;
+				break;
+			case 'b':
+				disp->im_process=7;
+				break;
+			
 			case 'h':
 				print_key_functions();
 				break;

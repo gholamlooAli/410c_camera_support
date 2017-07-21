@@ -188,7 +188,7 @@ static const char fShaderStr[] =
 		
        "precision mediump float;                            \n"
        "in vec2 v_tex_coord;                            \n"
-      	
+      	"uniform mediump int image_proc;			\n"	
 	"uniform mediump int uimage_width;			\n"	
 	"uniform sampler2D s_luma_texture;                        \n"
 	"layout (location=0) out vec4 out_color;   \n"
@@ -235,7 +235,11 @@ static const char fShaderStr[] =
 	"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
 	"res.b = yuv.x + 1.772 * yuv.y;	\n"
 	
-	
+	"switch (image_proc)		\n"
+	 " {				\n"
+	  " case 0:				\n"
+	   " break;				\n"
+	  " }				\n"
 	"res.a = 1.0;				\n"
 	"    out_color = clamp(res,vec4(0),vec4(1));\n"
 	
@@ -744,6 +748,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
 	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
+	glUniform1i(disp->location[3], disp->im_process);
 
 	glEnable(GL_CULL_FACE);
 	
@@ -854,9 +859,9 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	if(opt->ddump){
 		if(opt->eglimage)
-			disp->program = gles_load_program(nv12_vertex_code, fShaderStr2);
+			disp->program = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl");
 		else
-			disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+			disp->program = gles_load_program(nv12_vertex_code, "fShaderStr.glsl");
 	}
 	else{
 		//ali disp->program = gles_load_program(nv12_vertex_code, nv12_fragment_code);
@@ -881,6 +886,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	}
 	disp->location[2] = glGetUniformLocation(disp->program, "uimage_width");
 	if (disp->location[2] == -1)
+	{
+		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
+		goto cleanup;
+	}
+	disp->location[3] = glGetUniformLocation(disp->program, "image_proc");
+	if (disp->location[3] == -1)
 	{
 		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
 		goto cleanup;
