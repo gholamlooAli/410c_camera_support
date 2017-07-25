@@ -96,6 +96,8 @@ struct display_context
 	/** handle to the display that will be drawn on for EGL API. */
 	EGLDisplay egl_display;
  
+ /** command for image processing send to the fragment shader. */
+	EGLint im_process;
 	/** Height of the surface to be drawn on. */
 	EGLint height;
 	/** Width of the surface to be drawn on. */
@@ -108,7 +110,10 @@ struct display_context
 	GLuint vertex_buffers[MAX_DISPLAY_OBJECTS];
 	/** List of texture handles stored in GPU memory, video frames will be copied here. */
 	GLuint texture[MAX_DISPLAY_OBJECTS];
-	/** List of uniform reference locations for passing information to the shader program */
+	/** List of framebuffer handles stored in GPU memory, video frames will be copied here. */
+	GLuint framebuffer[MAX_DISPLAY_OBJECTS];
+	
+ /** List of uniform reference locations for passing information to the shader program */
 	GLint location[MAX_DISPLAY_OBJECTS];
 	/** The handle to the compiled shader program */
 	GLuint program;

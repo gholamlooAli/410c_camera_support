@@ -583,7 +583,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glClear(GL_COLOR_BUFFER_BIT);
 	/** Select the NV12 Shader program compiled in the setup routine */
-	glUseProgram(disp->program);
+	glUseProgram(disp->program[0]);
 	error = glGetError();
 	if (error != GL_NO_ERROR)
 	{
@@ -687,7 +687,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	 */
 	glClear(GL_COLOR_BUFFER_BIT);
 	/** Select the NV12 Shader program compiled in the setup routine */
-	glUseProgram(disp->program);
+	glUseProgram(disp->program[0]);
 	error = glGetError();
 	if (error != GL_NO_ERROR)
 	{
@@ -749,9 +749,10 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	glUniform1i(disp->location[0], 0);
 	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
 	glUniform1i(disp->location[3], disp->im_process);
+	//glUniform1i(disp->location[4], disp->im_process);
 
 	glEnable(GL_CULL_FACE);
-	
+	glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
 	error = glGetError();
 	/*
 	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
@@ -761,8 +762,18 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-	glBindVertexArray(0);
-
+	//glBindVertexArray(0);
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	glUseProgram(disp->program[1]);
+	error = glGetError();
+	if (error != GL_NO_ERROR)
+	{
+		LOGS_ERR("Use program %s", string_gl_error(error));
+		return -1;
+	}
+	glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+glUniform1i(disp->location[3], disp->im_process);
+glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/*
 	 * display the new camera frame after render is complete at the next vertical sync
 	 * This is drawn on the EGL surface which matches the full screen native window.
@@ -858,45 +869,86 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	
 	if(opt->ddump){
-		if(opt->eglimage)
-			disp->program = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl");
-		else
-			disp->program = gles_load_program(nv12_vertex_code, fShaderStr);
+		if(opt->eglimage){
+			
+			disp->program[0] = gles_load_program(nv12_vertex_code, "frgb_texture.glsl");
+			if (!disp->program[0])
+			{
+				LOGS_ERR("Unable to load program1");
+				goto cleanup;
+			}
+			disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc");
+			
+			if (disp->location[4] == -1)
+			{
+				LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
+				goto cleanup;
+			}
+
+			disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl");
+			if (!disp->program[1])
+			{
+				LOGS_ERR("Unable to load program2");
+				goto cleanup;
+			}
+			disp->location[3] = glGetUniformLocation(disp->program[1], "image2_proc");
+			
+			if (disp->location[3] == -1)
+			{
+				LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
+				goto cleanup;
+			}
+
+			disp->program[2] = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl");
+			if (!disp->program[2])
+			{
+				LOGS_ERR("Unable to load program3");
+				goto cleanup;
+			}
+		}
+		else{
+			disp->program[0] = gles_load_program(nv12_vertex_code, "fShaderStr.glsl");
+			if (!disp->program[0])
+			{
+				LOGS_ERR("Unable to load program4");
+				goto cleanup;
+			}
+		}
 	}
 	else{
 		//ali disp->program = gles_load_program(nv12_vertex_code, nv12_fragment_code);
 	}
-	if (!disp->program)
-	{
-		LOGS_ERR("Unable to load program");
-		goto cleanup;
-	}
-
+	
 	/*
 	 * Get a handle to the s_luma_texture variable in the fragment shader.
 	 * This handle is used to update the texture with each new camera frame.
 	 */
 	
 	
-	disp->location[0] = glGetUniformLocation(disp->program, "s_luma_texture");
+	disp->location[0] = glGetUniformLocation(disp->program[0], "s_luma_texture");
 	if (disp->location[0] == -1)
 	{
 		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
 		goto cleanup;
 	}
-	disp->location[2] = glGetUniformLocation(disp->program, "uimage_width");
+	disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width");
 	if (disp->location[2] == -1)
 	{
 		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
 		goto cleanup;
 	}
-	disp->location[3] = glGetUniformLocation(disp->program, "image_proc");
-	if (disp->location[3] == -1)
-	{
-		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-		goto cleanup;
+	if(opt->rgbtext){
+		
 	}
-
+	else{/*
+		disp->location[3] = glGetUniformLocation(disp->program[0], "image_proc");
+			
+		if (disp->location[3] == -1)
+		{
+			LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
+			goto cleanup;
+		}*/
+	}
 	/*
 	 * Get a handle to the s_chroma_texture variable in the fragment shader.
 	 * This handle is used to update the texture with each new camera frame.
@@ -962,6 +1014,37 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	glGenTextures(2, disp->texture);
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	if(opt->rgbtext){
+		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)disp->width,(GLsizei)disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		error = glGetError();
+		if (error != GL_NO_ERROR) {
+			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
+			return -1;
+		}
+		/*
+		 * Select the nearest texture value when the location doesn't match the exact texture position.
+		 * This will occur since the texture is a quarter the size of the surface size.
+		 */
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+
+		glGenFramebuffers(1, disp->framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,disp->texture[1],0);
+		int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if(i!= GL_FRAMEBUFFER_COMPLETE)
+		{
+			LOGS_ERR("Unable to generate FRAMEbuffer %s", string_gl_error(error));
+			return -1;
+		}
+	}
 	/*
 	 * Generate the space in the GPU for the luma texture, don't initialize the data.
 	 * The data in the memory will be updated in the render function.

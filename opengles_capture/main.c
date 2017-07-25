@@ -112,10 +112,11 @@ void set_default_options(struct options *opt)
 	opt->dma_export = true;
 	opt->ddump=true;
 	opt->eglimage=true;
+	opt->rgbtext=true;
 	opt->im_width=1920;
 	opt->im_height=1080;
 	opt->win_width=1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;
-	opt->win_height=810;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	opt->win_height=720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
 }
 
 
@@ -163,10 +164,12 @@ int get_options(struct options *opt, int argc, char * const argv[])
 			
 			case 	'0':
 				opt->win_width=atoi(optarg);
+				printf("win width=%d\n",opt->win_width);
 				break;
 			
 			case 	'1':
 				opt->win_height=atoi(optarg);
+				printf("win height=%d\n",opt->win_height);
 				break;
 			
 			case 	'2':

@@ -110,10 +110,13 @@ struct display_context
 	GLuint vertex_buffers[MAX_DISPLAY_OBJECTS];
 	/** List of texture handles stored in GPU memory, video frames will be copied here. */
 	GLuint texture[MAX_DISPLAY_OBJECTS];
-	/** List of uniform reference locations for passing information to the shader program */
+	/** List of framebuffer handles stored in GPU memory, video frames will be copied here. */
+	GLuint framebuffer[MAX_DISPLAY_OBJECTS];
+	
+ /** List of uniform reference locations for passing information to the shader program */
 	GLint location[MAX_DISPLAY_OBJECTS];
 	/** The handle to the compiled shader program */
-	GLuint program;
+	GLuint program[MAX_DISPLAY_OBJECTS];
 
 	/** Functions pointers called by the display event loop or render functions. */
 	struct event_callbacks callbacks;
