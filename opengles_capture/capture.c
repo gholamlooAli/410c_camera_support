@@ -750,6 +750,10 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 				disp->im_process=7;
 				break;
 			
+			case 's':
+				disp->im_process=8;
+				break;
+			
 			case 'h':
 				print_key_functions();
 				break;

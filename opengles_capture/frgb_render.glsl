@@ -15,8 +15,11 @@
 	vec4 rgba;
 	rgba= texture2D(s_luma_texture, v_tex_coord);
 	switch (image2_proc)		
-	{				
-		case 0:				
+	{	
+		case 0:
+		break;
+		
+		case 8:			
 			vec4 tm1m1 = texture2D(s_luma_texture,v_tex_coord+vec2(-1,-1)*texelsize);
 			vec4 tm10 =  texture2D(s_luma_texture,v_tex_coord+vec2(-1,0)*texelsize);
 			vec4 tm1p1 = texture2D(s_luma_texture,v_tex_coord+vec2(-1,1)*texelsize);

@@ -69,6 +69,7 @@
 			res.g = luma_chroma.r;
 			res.b = luma_chroma.r;
 		break;
+	}
 	res.a = 1.0;	
 	out_color = clamp(res,vec4(0),vec4(255));
 	

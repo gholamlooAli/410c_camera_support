@@ -728,7 +728,7 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 			case 'c':
 				disp->im_process=0;
 				break;
-			case 'g':
+			case 'k'://gray
 				disp->im_process=1;
 				break;
 			case 'y':

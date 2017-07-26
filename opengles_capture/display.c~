@@ -601,7 +601,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 * Luma will be replicated in x, y, and z using type GL_LUMINCANCE. Component w is set to 1.0.
 	 * The resolution of the texture matches the number of active pixels.
 	 */
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	
@@ -731,7 +731,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
 	glBindVertexArray(disp->vertex_array);
 
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	//GCHK(glGenTextures(1, &texturename));
 	
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
@@ -739,6 +739,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
 
 	/* Note: cube turned black until these were defined. */
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -746,7 +747,7 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
 	
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
-	glUniform1i(disp->location[0], 0);
+	//glUniform1i(disp->location[0], 0);
 	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
 	glUniform1i(disp->location[3], disp->im_process);
 	//glUniform1i(disp->location[4], disp->im_process);
@@ -772,8 +773,8 @@ int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, st
 		return -1;
 	}
 	glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-glUniform1i(disp->location[3], disp->im_process);
-glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+	glUniform1i(disp->location[3], disp->im_process);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/*
 	 * display the new camera frame after render is complete at the next vertical sync
 	 * This is drawn on the EGL surface which matches the full screen native window.
@@ -1012,8 +1013,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 
 	/* Generate two textures, the first for luma data, the second for chroma data */
 	glGenTextures(2, disp->texture);
-	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	//glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	if(opt->rgbtext){
 		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

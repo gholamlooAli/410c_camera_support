@@ -71,7 +71,7 @@
 		break;
 	}
 	res.a = 1.0;	
-	out_color = clamp(res,vec4(0),vec4(255));
+	out_color = clamp(res,vec4(0),vec4(1));
 	
       }                                                   
 
