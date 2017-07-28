@@ -15,22 +15,25 @@
 	vec4 rgba;
 	rgba= texture2D(s_luma_texture, v_tex_coord);
 	switch (image2_proc)		
-	{				
-		case 0:			
-			vec4 tm1m1 = texture2D(s_luma_texture,v_tex_coord+vec2(-1,-1)*texelsize);
-			vec4 tm10 =  texture2D(s_luma_texture,v_tex_coord+vec2(-1,0)*texelsize);
-			vec4 tm1p1 = texture2D(s_luma_texture,v_tex_coord+vec2(-1,1)*texelsize);
-			vec4 tp1m1 = texture2D(s_luma_texture,v_tex_coord+vec2(1,-1)*texelsize);
-			vec4 tp10 =  texture2D(s_luma_texture,v_tex_coord+vec2(1,0)*texelsize);
-			vec4 tp1p1 = texture2D(s_luma_texture,v_tex_coord+vec2(1,1)*texelsize);
-			vec4 t0m1 =  texture2D(s_luma_texture,v_tex_coord+vec2(0,-1)*texelsize);
-			vec4 t0p1 =  texture2D(s_luma_texture,v_tex_coord+vec2(0,-1)*texelsize);
+	{	
+		case 0:
+		break;
+		
+		case 8:			
+			vec3 tm1m1 = texture2D(s_luma_texture.rgb,v_tex_coord+vec2(-1,-1)*texelsize);
+			vec3 tm10 =  texture2D(s_luma_texture.rgb,v_tex_coord+vec2(-1,0)*texelsize);
+			vec3 tm1p1 = texture2D(s_luma_texture.rgb,v_tex_coord+vec2(-1,1)*texelsize);
+			vec3 tp1m1 = texture2D(s_luma_texture.rgb,v_tex_coord+vec2(1,-1)*texelsize);
+			vec3 tp10 =  texture2D(s_luma_texture.rgb,v_tex_coord+vec2(1,0)*texelsize);
+			vec3 tp1p1 = texture2D(s_luma_texture.rgb,v_tex_coord+vec2(1,1)*texelsize);
+			vec3 t0m1 =  texture2D(s_luma_texture.rgb,v_tex_coord+vec2(0,-1)*texelsize);
+			vec3 t0p1 =  texture2D(s_luma_texture.rgb,v_tex_coord+vec2(0,-1)*texelsize);
 
-			vec4 xdiff = -1.0*tm1m1 + -2.0*tm10 + -1.0*tm1p1 + 1.0*tp1m1 + 2.0*tp10 + 1.0*tp1p1;
-			vec4 ydiff = -1.0*tm1m1 + -2.0*t0m1 + -1.0*tp1m1 + 1.0*tm1p1 + 2.0*t0p1 + 1.0*tp1p1;
-			vec4 tot = sqrt(xdiff*xdiff+ydiff*ydiff);
+			vec3 xdiff = -1.0*tm1m1 + -2.0*tm10 + -1.0*tm1p1 + 1.0*tp1m1 + 2.0*tp10 + 1.0*tp1p1;
+			vec3 ydiff = -1.0*tm1m1 + -2.0*t0m1 + -1.0*tp1m1 + 1.0*tm1p1 + 2.0*t0p1 + 1.0*tp1p1;
+			vec3 tot = sqrt(xdiff*xdiff+ydiff*ydiff);
 
-			rgba = tot;
+			rgba =vec4( tot,1.0);
 		break;
 		
 		

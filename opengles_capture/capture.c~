@@ -348,6 +348,9 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			disp->render_ctx.buffers[i] = cap->buffers[buf.index].addr[i];
 			disp->cur_bufferindex=buf.index;
 		}
+		if(!opt->ddump){
+			//disp->render_ctx.buffers[1] = (1280*960)+cap->buffers[buf.index].addr[0];
+		}
 		//printf("the buffer index=%d\n",disp->cur_bufferindex);
 		/*
 		 * Render the planes to the display.
@@ -465,7 +468,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	else
 	{
 		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-		cap->num_planes = 2;
+		cap->num_planes = 1;
 	}
 	cap->memory = V4L2_MEMORY_MMAP;
 	
@@ -474,14 +477,14 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	 * This application is forcing 1080p for the sensor and display.
 	 */
 	fmt.type = cap->type;
-	/*
+	
 	ret = ioctl(cap->v4l2_fd, VIDIOC_G_FMT, &fmt);
 	if (ret < 0)
 	{
 		LOGS_ERR("Unable to get format %d", ret);
 		exit(-errno);
 	}
-	*/
+	
 	if(opt->ddump)
 	{
 		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
@@ -748,6 +751,10 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 				break;
 			case 'b':
 				disp->im_process=7;
+				break;
+			
+			case 's':
+				disp->im_process=8;
 				break;
 			
 			case 'h':
