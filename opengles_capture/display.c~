@@ -545,7 +545,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	GLenum error = GL_NO_ERROR;
 	int quit = 0;
 	EGLBoolean ret = 0;
-
 	/*
 	 * Process any events such as window resize before rendering on the window
 	 * One or more resize events may occur on startup as the window is switched to full screen mode.
@@ -563,9 +562,8 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 * This should be NV12 format with the chroma in CbCr order.
 	 */
 	if(!opt->ddump){
-		disp->render_ctx.buffers[1]=disp->render_ctx.buffers[0];
-		if (disp->render_ctx.num_buffers < 2 ||
-			!disp->render_ctx.buffers[0] || !disp->render_ctx.buffers[1])
+		//disp->render_ctx.buffers[1]=disp->render_ctx.buffers[0];
+		if (/*disp->render_ctx.num_buffers < 2 ||*/	!disp->render_ctx.buffers[1] || !disp->render_ctx.buffers[0])
 		{
 			LOGS_ERR("Unable to continue no buffer address in display render_context\n");
 			return -1;
@@ -594,7 +592,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
 	glBindVertexArray(disp->vertex_array);
 
-
+	
 	/*
 	 * Copy the Luma data from plane 0 to the s_luma_texture texture in the GPU.
 	 * Each texture has four components, x,y,z,w alias r,g,b,a alias s,r,t,u.
@@ -602,14 +600,56 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 * The resolution of the texture matches the number of active pixels.
 	 */
 	glActiveTexture(GL_TEXTURE0);
-	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	if(opt->eglimage){
+		int myfd;
+		unsigned offset = 0;
+		unsigned w = 1280/4;//1280;//640;
+		unsigned h = 960;//960;//480;
+		unsigned stride = ALIGN(w, 32)*4;
+		unsigned  bufind=disp->cur_bufferindex;	
+		myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
+		EGLImageKHR img;
+		// Bind to extensions
+		eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+		eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+		glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+		  
+		EGLint attr[] = {
+				EGL_WIDTH, w,
+				EGL_HEIGHT, h,
+				//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
+				EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
+				EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
+				EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+				EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+				EGL_NONE
+		};
+		img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+		if(disp->img==EGL_NO_IMAGE_KHR)
+			printf(" can not make egl image\n");
+		
+		/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
+		glBindVertexArray(disp->vertex_array);
+		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+		glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+		
 	
+	}
+	else{
+	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+	}
 	error = glGetError();
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
-	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
+	//glUniform1i(disp->location[2], disp->render_ctx.texture_width);
 
 	/*
 	 * Copy the chroma data from plane 1 to the s_chroma_texture texture in the GPU.
@@ -622,10 +662,49 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	 if(!opt->ddump){
 		glActiveTexture(GL_TEXTURE1);
-		 char * mm;
-		// mm=disp->render_ctx.buffers[0];
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
-		//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+		if(opt->eglimage){
+			int myfd;
+			unsigned offset = 1280*960;
+			unsigned w = 1280/4;//1280;//640;
+			unsigned h = 960/2;//960;//480;
+			unsigned stride = ALIGN(w, 32)*4;
+			unsigned  bufind=disp->cur_bufferindex;	
+			myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
+			EGLImageKHR img;
+			// Bind to extensions
+			eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+			eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+			glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+			  
+			EGLint attr[] = {
+					EGL_WIDTH, w,
+					EGL_HEIGHT, h,
+					//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
+					EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
+					EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
+					EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+					EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+					EGL_NONE
+			};
+			img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+			if(disp->img==EGL_NO_IMAGE_KHR)
+				printf(" can not make egl image\n");
+			
+			/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
+			glBindVertexArray(disp->vertex_array);
+			glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+			glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+		}
+		else{
+			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+			//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+		}
 		error = glGetError();
 		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
 		
@@ -916,7 +995,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		}
 	}
 	else{
-		disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl");
+		if(opt->eglimage){
+			disp->program[0] = gles_load_program(nv12_vertex_code, "nv12fragegl.glsl");
+		}
+		else{
+			disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl");
+		}
 	}
 	
 	/*
@@ -1046,7 +1130,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	else{
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,disp->width, disp->height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
+		error = glGetError();
+		if (error != GL_NO_ERROR) {
+			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
+			goto cleanup;
+		}
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1141,11 +1230,11 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 			/* create test egl img: */
 		//glClear(GL_COLOR_BUFFER_BIT);
 		//}
-		disp->render_func = render2_nv12m_subs_tex;
+		disp->render_func = render_nv12m_subs_tex;
 	}
 	else{
 		printf(" not make egl image\n");
-		glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, /*1920,1080*/(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
+		//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, /*1920,1080*/(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
    
 		error = glGetError();
 		if (error != GL_NO_ERROR) {
@@ -1156,12 +1245,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		 * Select the nearest texture value when the location doesn't match the exact texture position
 		 * This shouldn't occur if the texture matches the surface size.
 		 */
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
-
+*/
 		/* Finally save the pointer to the render function that will be used to update the surface */
 		disp->render_func = render_nv12m_subs_tex;
 	}

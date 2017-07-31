@@ -109,14 +109,14 @@ void set_default_options(struct options *opt)
 	opt->subdev_name = (char*)DEFAULT_SUBDEVICE;
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
-	opt->dma_export = false;//true;
+	opt->dma_export = true;
 	opt->ddump=false;//true;
 	opt->eglimage=false;//true;
 	opt->rgbtext=false;//true;
 	opt->im_width=1280;//1920;
 	opt->im_height=960;//1080;
-	opt->win_width=1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;
-	opt->win_height=720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
+	opt->win_height=960;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
 }
 
 
