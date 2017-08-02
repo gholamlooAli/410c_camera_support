@@ -102,7 +102,8 @@ struct display_context
 	EGLint height;
 	/** Width of the surface to be drawn on. */
 	EGLint width;
- EGLImageKHR img[4];
+ EGLImageKHR img1[MAX_DISPLAY_OBJECTS];
+ EGLImageKHR img2[MAX_DISPLAY_OBJECTS];
  uint32_t cur_bufferindex;
 	/** Handle to the vertex array, or collection of indices and vertices. */
 	GLuint vertex_array;

@@ -116,7 +116,7 @@ struct display_context
  /** List of uniform reference locations for passing information to the shader program */
 	GLint location[MAX_DISPLAY_OBJECTS];
 	/** The handle to the compiled shader program */
-	GLuint program;
+	GLuint program[MAX_DISPLAY_OBJECTS];
 
 	/** Functions pointers called by the display event loop or render functions. */
 	struct event_callbacks callbacks;

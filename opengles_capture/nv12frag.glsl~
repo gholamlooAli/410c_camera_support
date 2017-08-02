@@ -30,9 +30,11 @@
 	    yuv.yz = texture2D(s_chroma_texture, v_tex_coord).xw;
 	    // Then convert to YUV to RGB using offset and gain.
 	    yuv += offset;
+		yuv.y=0.0f;
+		yuv.z=0.0f;
 	    rgb = coeff * yuv;
 	    out_color = vec4(rgb,1);
-	};
+	}
 
 
  

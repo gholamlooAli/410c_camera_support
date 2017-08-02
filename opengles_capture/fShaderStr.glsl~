@@ -3,7 +3,8 @@
 		
         precision mediump float;                            
         in vec2 v_tex_coord;                            
-      	
+      	uniform mediump int image_proc;				
+	
 	uniform mediump int uimage_width;				
 	uniform sampler2D s_luma_texture;                        
 	layout (location=0) out vec4 out_color;   
@@ -64,6 +65,11 @@
 	//res.g = yuv.x - 0.213 * yuv.y - 0.534 * yuv.z;	
 	//res.b = yuv.x + 2.115 * yuv.y;	
 	
+	switch (image_proc)		
+	{				
+	   case 0:				
+	   break;				
+	}				
 	res.a = 1.0;				
 	//    rgb = coeff * yuv;
 	//    res = vec4(rgb,1);

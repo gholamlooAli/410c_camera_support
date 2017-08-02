@@ -10,11 +10,11 @@
 	layout (location=0) out vec4 out_color;   
 	// Additive offset for BT656 YUV to RGB transform.	
 	const vec3 offset = vec3(0, -0.5, -0.5);	
+	const mat3 coeff = mat3(	
+	    1.0,      1.0,     1.0,	
+	    0.0,     -0.344,  1.722,	
+	    1.402,   -0.714,   0);	
 	
-	//const mat3 coeff = mat3(	
-	//    1.0,      1.0,     1.0,	
-	//    0.0,     -0.344,  1.722,	
-	//    1.402,   -0.714,   0);	
 	// Temporary variable for YUV value	
 	vec3 yuv;	
 	// Temporary variable for RGB value	
@@ -30,7 +30,7 @@
 	float texture_width;       
 	float texel_width;       
 	vec3 yuv;		       
-	vec4 res;		       
+	//vec4 res;		       
 	  
 	texture_width=float(uimage_width);	
 	texel_width=1.0/texture_width; 
@@ -51,11 +51,10 @@
 	      yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	    
 	}	
 	  
-	yuv += offset;
 	
-	res.r = yuv.x + 1.402 * yuv.z;	
-	res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	
-	res.b = yuv.x + 1.772 * yuv.y;	
+	//res.r = yuv.x + 1.402 * yuv.z;	
+	//res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	
+	//res.b = yuv.x + 1.772 * yuv.y;	
 	
 	//res.r = yuv.x + 1.5958 * yuv.z;	
 	//res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	
@@ -69,10 +68,11 @@
 	{				
 	   case 0:				
 	   break;				
-	}				
-	res.a = 1.0;				
-	//    rgb = coeff * yuv;
-	//    res = vec4(rgb,1);
-	out_color = clamp(res,vec4(0),vec4(1));
+	}	
+	yuv += offset;
+	rgb = coeff * yuv;
+	out_color = vec4(rgb,1);
+	//res.a = 1.0;				
+	//out_color = clamp(res,vec4(0),vec4(1));
 	
       }                                                  

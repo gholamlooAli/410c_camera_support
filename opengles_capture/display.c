@@ -64,186 +64,7 @@ static const char nv12_vertex_code[] =
 	"   gl_Position = a_position;\n"
 	"   v_tex_coord = a_tex_coord;\n"
 	"}\n";
-/**
- * fragment shader, second stage draw camera texture on each point in the window.
- * Shaders included in code for simplicity but could be external files.
- */
-static const char nv12_fragment_code[] =
-	"#version 300 es	\n"
-	"//FRAGMENT_SHADER	\n"
-	"precision mediump float;	\n"
-	"// position lookup used for both textures	\n"
-	"in vec2 v_tex_coord;	\n"
-	"// Output of the shader, RGB color per position in surface	\n"
-	"layout(location = 0) out vec4 out_color;	\n"
-	"// Additive offset for BT656 YUV to RGB transform.	\n"
-	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
-	"// Column order vector gain for BT656 YUV to RGB transform	\n"
-	"\n"
-	"const mat3 coeff = mat3(	\n"
-	"    1.0,      1.0,     1.0,	\n"
-	"    0.0,     -0.344,  1.722,	\n"
-	"    1.402,   -0.714,   0);	\n"
-	"// Temporary variable for YUV value	\n"
-	"vec3 yuv;	\n"
-	"// Temporary variable for RGB value	\n"
-	"vec3 rgb;	\n"
-	"// Two used textures to hold the YUV420 Semi semi-planar data\n"
-	"// The luma texture holds three copies of the Y value in fields r,g,b or x,y,z, and 1.0 for w\n"
-	"uniform sampler2D s_luma_texture;\n"
-	"// The chroma texture holds three copies of the CR value in fields or x,y,z, and CB in w\n"
-	"uniform sampler2D s_chroma_texture;\n"
-	"void main()\n"
-	"{\n"
-	"    // Lookup the texture at the  position in the render window.\n"
-	"    // Take the two semi-planar textures assemble into single YUV pixel.\n"
-	"    yuv.x = texture2D(s_luma_texture, v_tex_coord).x;\n"
-	"    yuv.yz = texture2D(s_chroma_texture, v_tex_coord).xw;\n"
-	"    // Then convert to YUV to RGB using offset and gain.\n"
-	"    yuv += offset;\n"
-	"    rgb = coeff * yuv;\n"
-	"    out_color = vec4(rgb,1);\n"
-	"}\n";
 
-
-   
-static const char fShaderStr[] =  
-      "#version 300 es 			\n"
-      
-		
-       "precision mediump float;                            \n"
-       "in vec2 v_tex_coord;                            \n"
-      	
-	"uniform mediump int uimage_width;			\n"	
-	"uniform sampler2D s_luma_texture;                        \n"
-	"layout (location=0) out vec4 out_color;   \n"
-	"// Additive offset for BT656 YUV to RGB transform.	\n"
-	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
-	
-	//"const mat3 coeff = mat3(	\n"
-	//"    1.0,      1.0,     1.0,	\n"
-	//"    0.0,     -0.344,  1.722,	\n"
-	//"    1.402,   -0.714,   0);	\n"
-	"// Temporary variable for YUV value	\n"
-	"vec3 yuv;	\n"
-	"// Temporary variable for RGB value	\n"
-	"vec3 rgb;	\n"
-	
-      "void main()                                         \n"
-	
-
-      "{                                                   \n"
-      
-	  "vec4 luma_chroma;	       \n"
-	  "float xcoord;       \n"
-	  "float texture_width;       \n"
-	  "float texel_width;       \n"
-	  "vec3 yuv;		       \n"
-	  "vec4 res;		       \n"
-	  
-	  "texture_width=float(uimage_width);	\n"
-	  "texel_width=1.0/texture_width; \n"
-	  "xcoord = floor (v_tex_coord.x * texture_width);	\n" 
-	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
-	  // just look up the brightness
-	    "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
-	  
-	  
-	  "if (0.0 == mod(xcoord , 2.0)) \n"	// even
-	   " {				\n"
-	   "   yuv.y = luma_chroma.r;	\n"
-	   "   yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).g;	\n"
-	   " }	\n"
-	  "else \n"// odd
-	   " {	\n"
-	   "   yuv.z = luma_chroma.r;	\n"
-	   "   yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	\n"    
-	   "}	\n"
-	  
-	"yuv += offset;\n"
-	
-	"res.r = yuv.x + 1.402 * yuv.z;	\n"
-	"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
-	"res.b = yuv.x + 1.772 * yuv.y;	\n"
-	
-	//"res.r = yuv.x + 1.5958 * yuv.z;	\n"
-	//"res.g = yuv.x - 0.39173 * yuv.y - 0.8129 * yuv.z;	\n"
-	//"res.b = yuv.x + 2.017 * yuv.y;	\n"
-	
-	//"res.r = yuv.x + 1.793 * yuv.z;	\n"
-	//"res.g = yuv.x - 0.213 * yuv.y - 0.534 * yuv.z;	\n"
-	//"res.b = yuv.x + 2.115 * yuv.y;	\n"
-	
-	"res.a = 1.0;				\n"
-	//"    rgb = coeff * yuv;\n"
-	//"    res = vec4(rgb,1);\n"
-	"    out_color = clamp(res,vec4(0),vec4(1));\n"
-	
-      "}                                                   \n";
-
-
- static const char fShaderStr2[] =  
-      "#version 300 es 			\n"
-      
-		
-       "precision mediump float;                            \n"
-       "in vec2 v_tex_coord;                            \n"
-      	"uniform mediump int image_proc;			\n"	
-	"uniform mediump int uimage_width;			\n"	
-	"uniform sampler2D s_luma_texture;                        \n"
-	"layout (location=0) out vec4 out_color;   \n"
-	"// Additive offset for BT656 YUV to RGB transform.	\n"
-	"const vec3 offset = vec3(0, -0.5, -0.5);	\n"
-	"// Temporary variable for YUV value	\n"
-	"vec3 yuv;	\n"
-	"// Temporary variable for RGB value	\n"
-	"vec3 rgb;	\n"
-	
-      "void main()                                         \n"
-	
-
-      "{                                                   \n"
-      
-	  "vec4 luma_chroma;	       \n"
-	  "float xcoord;       \n"
-	  "float texture_width;       \n"
-	  "float texel_width;       \n"
-	  "vec3 yuv;		       \n"
-	  "vec4 res;		       \n"
-	  
-	  "texture_width=float(uimage_width);	\n"
-	  "texel_width=1.0/texture_width; \n"
-	  "xcoord = floor (v_tex_coord.x * texture_width);	\n" 
-	  "luma_chroma = texture2D(s_luma_texture, v_tex_coord);	\n"
-	  // just look up the brightness
-	   
-	  "   yuv.y = luma_chroma.b;	\n"
-	  "   yuv.z = luma_chroma.r;	\n"
-	   
-	  "if (0.0 != mod(xcoord , 2.0)) \n"	// even
-	   " {				\n"
-	   "yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	\n"
-	   " }	\n"
-	  "else \n"// odd
-	   " {	\n"
-	   "yuv.x = (luma_chroma.g - 0.0625) * 1.1643;	\n"
-	   "}	\n"
-	  
-	"yuv += offset;\n"
-	
-	"res.r = yuv.x + 1.402 * yuv.z;	\n"
-	"res.g = yuv.x - 0.3441 * yuv.y - 0.7141 * yuv.z;	\n"
-	"res.b = yuv.x + 1.772 * yuv.y;	\n"
-	
-	"switch (image_proc)		\n"
-	 " {				\n"
-	  " case 0:				\n"
-	   " break;				\n"
-	  " }				\n"
-	"res.a = 1.0;				\n"
-	"    out_color = clamp(res,vec4(0),vec4(1));\n"
-	
-      "}                                                   \n";
 
  
 
@@ -353,6 +174,34 @@ int x11_close_display(struct display_context *disp)
 }
 
 
+static EGLImageKHR create_image(unsigned w, unsigned h, unsigned offset, int myfd)
+{
+	//int myfd;
+	//unsigned offset = 1280*960;
+	//unsigned w = 1280/4;//1280;//640;
+	//unsigned h = 960/2;//960;//480;
+	unsigned stride = ALIGN(w, 32)*4;
+	//unsigned  bufind=disp->cur_bufferindex;	
+	//myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
+	EGLImageKHR img;
+	// Bind to extensions
+	eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+	eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+	glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+	  
+	EGLint attr[] = {
+		EGL_WIDTH, w,
+		EGL_HEIGHT, h,
+		//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
+		EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
+		EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
+		EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+		EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+		EGL_NONE
+	};
+	return  eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
+	
+}
 int egl_init(struct display_context *disp)
 {
 	EGLBoolean ret;
@@ -562,7 +411,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 * This should be NV12 format with the chroma in CbCr order.
 	 */
 	if(!opt->ddump){
-		//disp->render_ctx.buffers[1]=disp->render_ctx.buffers[0];
 		if (/*disp->render_ctx.num_buffers < 2 ||*/	!disp->render_ctx.buffers[1] || !disp->render_ctx.buffers[0])
 		{
 			LOGS_ERR("Unable to continue no buffer address in display render_context\n");
@@ -601,52 +449,18 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glActiveTexture(GL_TEXTURE0);
 	if(opt->eglimage){
-		int myfd;
-		unsigned offset = 0;
-		unsigned w = 1280/4;//1280;//640;
-		unsigned h = 960;//960;//480;
-		unsigned stride = ALIGN(w, 32)*4;
-		unsigned  bufind=disp->cur_bufferindex;	
-		myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-		EGLImageKHR img;
-		// Bind to extensions
-		eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-		eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
-		glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
-		  
-		EGLint attr[] = {
-				EGL_WIDTH, w,
-				EGL_HEIGHT, h,
-				//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
-				EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
-				EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
-				EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-				EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-				EGL_NONE
-		};
-		img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-		if(disp->img==EGL_NO_IMAGE_KHR)
-			printf(" can not make egl image\n");
-		
-		/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
-		glBindVertexArray(disp->vertex_array);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-		glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+		glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)disp->img1[disp->cur_bufferindex]);
+		setTexParam();
 		
-	
 	}
 	else{
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	}
 	error = glGetError();
-	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+	
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
 	//glUniform1i(disp->location[2], disp->render_ctx.texture_width);
@@ -663,53 +477,25 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 if(!opt->ddump){
 		glActiveTexture(GL_TEXTURE1);
 		if(opt->eglimage){
-			int myfd;
-			unsigned offset = 1280*960;
-			unsigned w = 1280/4;//1280;//640;
-			unsigned h = 960/2;//960;//480;
-			unsigned stride = ALIGN(w, 32)*4;
-			unsigned  bufind=disp->cur_bufferindex;	
-			myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-			EGLImageKHR img;
-			// Bind to extensions
-			eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-			eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
-			glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
-			  
-			EGLint attr[] = {
-					EGL_WIDTH, w,
-					EGL_HEIGHT, h,
-					//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
-					EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
-					EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
-					EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-					EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-					EGL_NONE
-			};
-			img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-			if(disp->img==EGL_NO_IMAGE_KHR)
-				printf(" can not make egl image\n");
-			
-			/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
-			glBindVertexArray(disp->vertex_array);
 			glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-			glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
+			glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)disp->img2[disp->cur_bufferindex]);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+			setTexParam();
 		}
 		else{
 			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
-			//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+			glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+			
 		}
 		error = glGetError();
-		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+		
 		
 		/* Indicate that GL_TEXTURE1 is s_chroma_texture from previous lookup */
 		glUniform1i(disp->location[1], 1);
+	 }
+	 if(opt->rgbtext)
+	 {
+		 glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
 	 }
 	/*
 	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
@@ -719,8 +505,26 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-	glBindVertexArray(0);
+	//glBindVertexArray(0);
 
+	if(opt->rgbtext)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER,0);
+		glUseProgram(disp->program[1]);
+		error = glGetError();
+		if (error != GL_NO_ERROR)
+		{
+			LOGS_ERR("Use program %s", string_gl_error(error));
+			return -1;
+		}
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, disp->texture[2]);
+		glUniform1i(disp->location[3], disp->im_process);
+		glUniform1i(disp->location[7], 0);
+		glUniform1i(disp->location[5], opt->im_width);
+		glUniform1i(disp->location[6], opt->im_height);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+	}
 	/*
 	 * display the new camera frame after render is complete at the next vertical sync
 	 * This is drawn on the EGL surface which matches the full screen native window.
@@ -737,136 +541,21 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 
 int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, struct capture_context *cap)
 {
-	GLenum error = GL_NO_ERROR;
-	int quit = 0;
-	EGLBoolean ret = 0;
-
-	/*
-	 * Process any events such as window resize before rendering on the window
-	 * One or more resize events may occur on startup as the window is switched to full screen mode.
-	 */
-	quit = x11_process_pending_events(disp);
-	if (quit)
-	{
-		x11_close_display(disp);
-		return 1;
-	}
-	
-	
-	
-	/*
-	 * Set the rendered surface to match the full window resolution.
-	 * This routine will render to the entire window.
-	 */
-	glViewport(0, 0, disp->width, disp->height);
-	/*
-	 * Only the color buffer is used. (The depth, and stencil buffers are unused.)
-	 * Set it to the background color before rendering.
-	 */
-	glClear(GL_COLOR_BUFFER_BIT);
-	/** Select the NV12 Shader program compiled in the setup routine */
-	glUseProgram(disp->program[0]);
-	error = glGetError();
-	if (error != GL_NO_ERROR)
-	{
-		LOGS_ERR("Use program %s", string_gl_error(error));
-		return -1;
-	}
-
-
-	//printf(" make egl image cur_bufferindex=%d\n",disp->cur_bufferindex);
-	int myfd;
-	unsigned offset = 0;
-	unsigned w = 1920/2;//1280;//640;
-	unsigned h = 1080;//960;//480;
-	unsigned stride = ALIGN(w, 32)*4;
-	unsigned  bufind=disp->cur_bufferindex;	
-	//bufind+=1;
-	//if(bufind==(unsigned)opt->buffer_count)
-	//	bufind=0;
-	
-	myfd=cap->buffers[bufind].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-	EGLImageKHR img;
-	// Bind to extensions
-	eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-	eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
-	glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
-	  
-	EGLint attr[] = {
-			EGL_WIDTH, w,
-			EGL_HEIGHT, h,
-			//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
-			EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
-			EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
-			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-			EGL_NONE
-	};
-	img= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-	if(disp->img==EGL_NO_IMAGE_KHR)
-		printf(" can not make egl image\n");
-	
-	/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
-	glBindVertexArray(disp->vertex_array);
-
-	//glActiveTexture(GL_TEXTURE0);
-	//GCHK(glGenTextures(1, &texturename));
-	
-	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-	//GCHK(glBindTexture(GL_TEXTURE_2D, texturename));
-	glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
-
-	/* Note: cube turned black until these were defined. */
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
-	
-	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
-	//glUniform1i(disp->location[0], 0);
-	glUniform1i(disp->location[2], disp->render_ctx.texture_width);
-	glUniform1i(disp->location[3], disp->im_process);
-	//glUniform1i(disp->location[4], disp->im_process);
-
-	glEnable(GL_CULL_FACE);
-	glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
-	error = glGetError();
-	/*
-	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
-	 * The fourth parameter, indices value here is passed as null since the values are already
-	 * available in the GPU memory through the vertex array
-	 * GL_TRIANGLES - draw each set of three vertices as an individual trianvle.
-	 */
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-	/** Select the default vertex array, allowing the applications array to be unbound */
-	//glBindVertexArray(0);
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	glUseProgram(disp->program[1]);
-	error = glGetError();
-	if (error != GL_NO_ERROR)
-	{
-		LOGS_ERR("Use program %s", string_gl_error(error));
-		return -1;
-	}
-	glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-	glUniform1i(disp->location[3], disp->im_process);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-	/*
-	 * display the new camera frame after render is complete at the next vertical sync
-	 * This is drawn on the EGL surface which matches the full screen native window.
-	 */
-	ret = eglSwapBuffers(disp->egl_display, disp->egl_surface);
-	if (ret == EGL_FALSE)
-	{
-		LOGS_ERR("Unable to update surface %s", string_egl_error(eglGetError()));
-	}
-
 	return 0;
 }
 
 
+
+
+int setTexParam(void)
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+	return 0;
+}
 /**
  * Display and GPU setup for a YUV420 texture display.
  * Setup a full screen window and utilize EGL and OpenGLES to setup the display_context.
@@ -947,59 +636,33 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	
 	
-	if(opt->ddump){
+	if(opt->ddump){	//direct dump to memory
 		if(opt->eglimage){
 			
-			disp->program[0] = gles_load_program(nv12_vertex_code, "frgb_texture.glsl");
-			if (!disp->program[0])
-			{
-				LOGS_ERR("Unable to load program1");
-				goto cleanup;
-			}
-			disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc");
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
+			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
+			//GCHK(disp->program[2] = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl"));
+			GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
+			GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
+			GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
+			GCHK(disp->location[3] = glGetUniformLocation(disp->program[1], "image2_proc"));
 			
-			if (disp->location[4] == -1)
-			{
-				LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-				goto cleanup;
-			}
-
-			disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl");
-			if (!disp->program[1])
-			{
-				LOGS_ERR("Unable to load program2");
-				goto cleanup;
-			}
-			disp->location[3] = glGetUniformLocation(disp->program[1], "image2_proc");
 			
-			if (disp->location[3] == -1)
-			{
-				LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-				goto cleanup;
-			}
-
-			disp->program[2] = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl");
-			if (!disp->program[2])
-			{
-				LOGS_ERR("Unable to load program3");
-				goto cleanup;
-			}
 		}
 		else{
-			disp->program[0] = gles_load_program(nv12_vertex_code, "fShaderStr.glsl");
-			if (!disp->program[0])
-			{
-				LOGS_ERR("Unable to load program4");
-				goto cleanup;
-			}
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "fShaderStr.glsl"));
 		}
 	}
 	else{
 		if(opt->eglimage){
-			disp->program[0] = gles_load_program(nv12_vertex_code, "nv12fragegl.glsl");
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "nv12fragegl.glsl"));
+			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
+			GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
+			GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
+			GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));
 		}
 		else{
-			disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl");
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl"));
 		}
 	}
 	
@@ -1009,27 +672,14 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 */
 	
 	
-	disp->location[0] = glGetUniformLocation(disp->program[0], "s_luma_texture");
-	if (disp->location[0] == -1)
-	{
-		LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-		goto cleanup;
-	}
+	GCHK(disp->location[0] = glGetUniformLocation(disp->program[0], "s_luma_texture"));
 	if(opt->ddump){
-		disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width");
-		if (disp->location[2] == -1)
-		{
-			LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-			goto cleanup;
-		}
+		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
+	
 	}
 	else{
-		disp->location[1] = glGetUniformLocation(disp->program[0], "s_chroma_texture");
-		if (disp->location[1] == -1)
-		{
-			LOGS_ERR("Unable to get uniform location %s", string_gl_error(glGetError()));
-			return -1;
-		}	
+		GCHK(disp->location[1] = glGetUniformLocation(disp->program[0], "s_chroma_texture"));
+		
 	}
 	if(opt->rgbtext){
 		
@@ -1078,70 +728,23 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	glEnableVertexAttribArray(1);
 
 	/* Copy the vertices to the GPU to be used in a_position */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
-	error = glGetError();
-	if (error != GL_NO_ERROR)
-	{
-		LOGS_ERR("Use glVertexAttribPointer 0 %s", string_gl_error(error));
-	}
+	GCHK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0));
 	/* Copy the texture co-ordinates to the GPU to be used in a_tex_coord */
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (const void*)(3 * sizeof(GLfloat)));
-	error = glGetError();
-	if (error != GL_NO_ERROR)
-	{
-		LOGS_ERR("Use glVertexAttribPointer 1 %s", string_gl_error(error));
-	}
+	GCHK(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (const void*)(3 * sizeof(GLfloat))));
 	/* Select the default vertex array, allowing the application's array to be unbound */
 	glBindVertexArray(0);
 
 	/* Generate two textures, the first for luma data, the second for chroma data */
-	glGenTextures(2, disp->texture);
-	if(opt->rgbtext){
-		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)disp->width,(GLsizei)disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		error = glGetError();
-		if (error != GL_NO_ERROR) {
-			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
-			return -1;
-		}
-		/*
-		 * Select the nearest texture value when the location doesn't match the exact texture position.
-		 * This will occur since the texture is a quarter the size of the surface size.
-		 */
-		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
-
-		glGenFramebuffers(1, disp->framebuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,disp->texture[1],0);
-		int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if(i!= GL_FRAMEBUFFER_COMPLETE)
-		{
-			LOGS_ERR("Unable to generate FRAMEbuffer %s", string_gl_error(error));
-			return -1;
-		}
-	}
-	else{
+	glGenTextures(3, disp->texture);
+	
+	
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
-		error = glGetError();
-		if (error != GL_NO_ERROR) {
-			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
-			goto cleanup;
-		}
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
-	}
+		//GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,disp->width, disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
+		setTexParam();
+		
+	
 	/*
 	 * Generate the space in the GPU for the luma texture, don't initialize the data.
 	 * The data in the memory will be updated in the render function.
@@ -1165,92 +768,67 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	if(!opt->ddump){
 		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,disp->width/2, disp->height/2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL);
-		error = glGetError();
-		if (error != GL_NO_ERROR) {
-			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
-			return -1;
-		}
-		/*
-		 * Select the nearest texture value when the location doesn't match the exact texture position.
-		 * This will occur since the texture is a quarter the size of the surface size.
-		 */
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,disp->width/2, disp->height/2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL));
+		setTexParam();
 		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
 
 	}
-	
+	if(opt->rgbtext){
+		glBindTexture(GL_TEXTURE_2D, disp->texture[2]);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,(GLsizei)disp->width,(GLsizei)disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+		setTexParam();
+		
+		glGenFramebuffers(1, disp->framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,disp->texture[2],0);
+		int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if(i!= GL_FRAMEBUFFER_COMPLETE)
+		{
+			LOGS_ERR("Unable to generate FRAMEbuffer %s", string_gl_error(error));
+			return -1;
+		}
+	}
 	/*
 	 * Select an orange color that is distict from the native window.
 	 * If the render fails an orange screen will appear.
 	 * If render never reached then a white screen will appear.
 	 */
 	glClearColor ( 1.0f, 0.6f, 0.0f, 0.0f );
-	//	glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, /*1920,1080*/(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
 	if(opt->eglimage){
-		/*
-		printf(" make egl image cur_bufferindex=%f\n",disp->cur_bufferindex);
-		int myfd;
-		int fd[4];
-		unsigned offset = 0;
-		unsigned w = 1920/2;//1280;//640;
-		unsigned h = 1080;//960;//480;
-		unsigned stride = ALIGN(w, 32)*4;
-		
-		myfd=cap->buffers[disp->cur_bufferindex].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-		for(int i=0 ;i<4;i++)
-			fd[i]=cap->buffers[i].dma_buf_fd[0];	//for plane 0 and dequeued buffer index
-		//GLuint texturename = 0, texture_handle;
 		EGLImageKHR img;
-		// Bind to extensions
-		eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-		eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
-		glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
-	  
-		EGLint attr[] = {
-				EGL_WIDTH, w,
-				EGL_HEIGHT, h,
-				//EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_YUYV,
-				EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_ARGB8888,
-				EGL_DMA_BUF_PLANE0_FD_EXT, myfd,
-				EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-				EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-				EGL_NONE
-		};
-		for(int i=0;i<4;i++){
-			myfd=fd[i];	//for plane 0 and dequeued buffer index
-			disp->img[i]= eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL, attr);
-			//ECHK(img=img);
-			if(disp->img[i]==EGL_NO_IMAGE_KHR)
-				printf(" can not make egl image[%d]\n",i);
-			/* create test egl img: */
-		//glClear(GL_COLOR_BUFFER_BIT);
-		//}
+		int w=1920/2;
+		int h=1080;
+		if(!opt->ddump){
+			w=1280/4;
+			h=960;	
+		}
+		for (int i = 0; i < cap->num_buf; i++)
+		{
+			img=create_image(w, h, 0, cap->buffers[i].dma_buf_fd[0]);
+			if(img==EGL_NO_IMAGE_KHR){
+				printf(" can not make egl image\n");		
+				exit(-1);
+			}
+			disp->img1[i]=img;
+		}
+		if(!opt->ddump){
+			for (int i = 0; i < cap->num_buf; i++)
+			{
+				img=create_image(w, h/2, w*4*h, cap->buffers[i].dma_buf_fd[0]);
+				if(img==EGL_NO_IMAGE_KHR){
+					printf(" can not make egl image\n");		
+					exit(-1);
+				}
+				disp->img2[i]=img;
+			}
+		}
 		disp->render_func = render_nv12m_subs_tex;
 	}
 	else{
 		printf(" not make egl image\n");
-		//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, /*1920,1080*/(GLsizei)opt->im_width,(GLsizei)opt->im_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL );
-   
-		error = glGetError();
-		if (error != GL_NO_ERROR) {
-			LOGS_ERR("Unable to generate texture %s", string_gl_error(error));
-			goto cleanup;
-		}
-		/*
-		 * Select the nearest texture value when the location doesn't match the exact texture position
-		 * This shouldn't occur if the texture matches the surface size.
-		 */
-/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
-*/
+		
 		/* Finally save the pointer to the render function that will be used to update the surface */
 		disp->render_func = render_nv12m_subs_tex;
 	}
