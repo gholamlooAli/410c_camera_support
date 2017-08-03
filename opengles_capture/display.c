@@ -449,15 +449,25 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glActiveTexture(GL_TEXTURE0);
 	if(opt->eglimage){
+		EGLImageKHR img;
+		int w=1920/2;
+		int h=1080;
+		if(!opt->ddump){
+			w=1280/4;
+			h=960;	
+		}
+		
+		img=create_image(w, h, 0, cap->buffers[disp->cur_bufferindex].dma_buf_fd[0]);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-		glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)disp->img1[disp->cur_bufferindex]);
+		glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
 		setTexParam();
 		
 	}
 	else{
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+		//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width,disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	}
 	error = glGetError();
 	
@@ -477,14 +487,20 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 if(!opt->ddump){
 		glActiveTexture(GL_TEXTURE1);
 		if(opt->eglimage){
+			EGLImageKHR img;
+			int w=1280/4;
+			int h=960;
+			img=create_image(w,h/2, w*4*h, cap->buffers[disp->cur_bufferindex].dma_buf_fd[0]);
+			
 			glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
-			glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)disp->img2[disp->cur_bufferindex]);
+			glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
 
 			setTexParam();
 		}
 		else{
-			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
 			glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
+			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width/2, disp->height/2,GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[1]);
+			
 			
 		}
 		error = glGetError();
@@ -509,7 +525,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-	//glBindVertexArray(0);
+	glBindVertexArray(0);
 
 	if(opt->rgbtext)
 	{
@@ -667,7 +683,10 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
 		GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
 		GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
-		GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));	
+		GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));
+		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
+		GCHK(disp->location[3] = glGetUniformLocation(disp->program[0], "uimage_height"));
+		GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
 	}
 	else{
 		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
@@ -805,6 +824,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 */
 	glClearColor ( 1.0f, 0.6f, 0.0f, 0.0f );
 	if(opt->eglimage){
+		/*
 		EGLImageKHR img;
 		int w=1920/2;
 		int h=1080;
@@ -832,6 +852,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 				disp->img2[i]=img;
 			}
 		}
+		*/
 		disp->render_func = render_nv12m_subs_tex;
 	}
 	else{
