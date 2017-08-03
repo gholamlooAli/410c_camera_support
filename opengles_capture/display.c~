@@ -492,6 +492,10 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 		
 		/* Indicate that GL_TEXTURE1 is s_chroma_texture from previous lookup */
 		glUniform1i(disp->location[1], 1);
+		//glUniform1i(disp->location[3], disp->im_process);
+		//glUniform1i(disp->location[7], 0);
+		glUniform1i(disp->location[2], opt->im_width);
+		glUniform1i(disp->location[3], opt->im_height);
 	 }
 	 if(opt->rgbtext)
 	 {
@@ -510,6 +514,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	if(opt->rgbtext)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER,0);
+		glBindVertexArray(disp->vertex_array);
 		glUseProgram(disp->program[1]);
 		error = glGetError();
 		if (error != GL_NO_ERROR)
@@ -517,10 +522,10 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 			LOGS_ERR("Use program %s", string_gl_error(error));
 			return -1;
 		}
-		//glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[2]);
 		glUniform1i(disp->location[3], disp->im_process);
-		glUniform1i(disp->location[7], 0);
+		//glUniform1i(disp->location[7], 0);
 		glUniform1i(disp->location[5], opt->im_width);
 		glUniform1i(disp->location[6], opt->im_height);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -640,10 +645,6 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		if(opt->eglimage){
 			
 			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
-			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
-			//GCHK(disp->program[2] = gles_load_program(nv12_vertex_code, "fShaderStr2.glsl"));
-			GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
-			GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
 			GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
 			GCHK(disp->location[3] = glGetUniformLocation(disp->program[1], "image2_proc"));
 			
@@ -656,16 +657,23 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	else{
 		if(opt->eglimage){
 			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "nv12fragegl.glsl"));
-			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
-			GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
-			GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
-			GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));
 		}
 		else{
 			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl"));
 		}
 	}
-	
+	if(opt->rgbtext)
+	{
+		GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
+		GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
+		GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
+		GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));	
+	}
+	else{
+		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
+		GCHK(disp->location[3] = glGetUniformLocation(disp->program[0], "uimage_height"));
+		GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
+	}
 	/*
 	 * Get a handle to the s_luma_texture variable in the fragment shader.
 	 * This handle is used to update the texture with each new camera frame.
