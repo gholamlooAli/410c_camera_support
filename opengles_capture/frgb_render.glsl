@@ -2,7 +2,7 @@
       
 	precision mediump float;                            
 	in vec2 v_tex_coord;    
-	uniform mediump int image2_proc;				
+	uniform mediump int image_proc;				
 	uniform mediump int uimage_width;				
 	uniform mediump int uimage_height;					
       	uniform sampler2D s_luma_texture;                        
@@ -15,7 +15,7 @@
 	vec2 texelsize=vec2(1.0f/float(uimage_width),1.0f/float(uimage_height));      
 	vec4 rgba;
 	rgba= texture2D(s_luma_texture, v_tex_coord);
-	switch (image2_proc)		
+	switch (image_proc)		
 	{	
 		case 0:
 		break;
@@ -56,8 +56,8 @@
 			*/
 			rgba = tot;
 			break;
-		
-	}
+	}	
+	
 	out_color =rgba;
 	
       }                                                   

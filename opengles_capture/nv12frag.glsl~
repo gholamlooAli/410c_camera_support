@@ -36,7 +36,7 @@
 			case 0:
 			break;
 			
-			case 8:	
+			case 8:	/*
 				float yy[9],uu[9],vv[9],rr[9],gg[9],bb[9];
 				for(int i=0; i<3; i++){
 					for(int j=0; j<3; j++){
@@ -66,7 +66,7 @@
 				vec3 xdiff = -1.0*tm1m1 + -2.0*tm10 + -1.0*tm1p1 + 1.0*tp1m1 + 2.0*tp10 + 1.0*tp1p1;
 				vec3 ydiff = -1.0*tm1m1 + -2.0*t0m1 + -1.0*tp1m1 + 1.0*tm1p1 + 2.0*t0p1 + 1.0*tp1p1;
 				vec3 tot = sqrt(xdiff*xdiff+ydiff*ydiff);
-
+*/
 				//rgb = tp1p1;//tot;
 			break;
 			
@@ -100,7 +100,7 @@
 				rgb.g=0.0f;
 			break;
 		}
-		rgb=tot;
+		//rgb=tot;
 	    out_color = vec4(rgb,1);
 	}
 

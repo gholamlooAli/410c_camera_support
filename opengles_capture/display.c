@@ -473,8 +473,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
-	//glUniform1i(disp->location[2], disp->render_ctx.texture_width);
-
+	
 	/*
 	 * Copy the chroma data from plane 1 to the s_chroma_texture texture in the GPU.
 	 * Each texture has four components, x,y,z,w alias r,g,b,a alias s,r,t,u.
@@ -525,7 +524,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-//	glBindVertexArray(0);
 
 	if(opt->rgbtext)
 	{
@@ -734,17 +732,14 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	/* Copy the texture co-ordinates to the GPU to be used in a_tex_coord */
 	GCHK(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (const void*)(3 * sizeof(GLfloat))));
 	/* Select the default vertex array, allowing the application's array to be unbound */
-//	glBindVertexArray(0);
 
 	/* Generate two textures, the first for luma data, the second for chroma data */
 	glGenTextures(3, disp->texture);
 	
-	
-		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		//GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,disp->width, disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
-		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
-		setTexParam();
+	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
+	setTexParam();
 		
 	
 	/*
@@ -754,7 +749,6 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * Luma will be replicated in x, y, and z using type GL_LUMINCANCE. Component w is set to 1.0.
 	 * The resolution of the texture matches the number of active pixels.
 	 */
-	//glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0,GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 	
 	/*
 	 * Generate the space in the GPU for the chroma texture, don't initialize the data.
