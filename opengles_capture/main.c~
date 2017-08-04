@@ -112,7 +112,7 @@ void set_default_options(struct options *opt)
 	opt->dma_export = true;
 	opt->ddump=false;//true;
 	opt->eglimage=true;
-	opt->rgbtext=false;//true;
+	opt->rgbtext=true;
 	opt->im_width=1280;//1920;
 	opt->im_height=960;//1080;
 	opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
@@ -151,7 +151,7 @@ int get_options(struct options *opt, int argc, char * const argv[])
 
 	while(1)
 	{	// : means required_argument
-		o = getopt_long(argc, argv, "d:s:p:n:u:hve:0:1:2:3:", long_options, NULL);
+		o = getopt_long(argc, argv, "d:s:p:n:u:hve:0:1:2:3:4:", long_options, NULL);
 		if (o == -1) break;
 
 		switch (o)
@@ -179,7 +179,11 @@ int get_options(struct options *opt, int argc, char * const argv[])
 			case 	'3':
 				opt->im_height=atoi(optarg);
 				break;
-			
+
+			case 	'4':
+				if(atoi(optarg)==1)
+					opt->rgbtext=false;
+				break;
 			
 			case CAPTURE_DEV:
 				opt->dev_name = optarg;

@@ -53,9 +53,9 @@
 			vec4 xdiff = -1.0*tm1m1 + -2.0*tm10 + -1.0*tm1p1 + 1.0*tp1m1 + 2.0*tp10 + 1.0*tp1p1;
 			vec4 ydiff = -1.0*tm1m1 + -2.0*t0m1 + -1.0*tp1m1 + 1.0*tm1p1 + 2.0*t0p1 + 1.0*tp1p1;
 			vec4 tot = sqrt(xdiff*xdiff+ydiff*ydiff);
-*/
+			*/
 			rgba = tot;
-		break;
+			break;
 		
 	}
 	out_color =rgba;

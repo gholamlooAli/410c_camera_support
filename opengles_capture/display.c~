@@ -411,7 +411,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 * This should be NV12 format with the chroma in CbCr order.
 	 */
 	if(!opt->ddump){
-		if (/*disp->render_ctx.num_buffers < 2 ||*/	!disp->render_ctx.buffers[1] || !disp->render_ctx.buffers[0])
+		if (!disp->render_ctx.buffers[1] || !disp->render_ctx.buffers[0]/* || disp->render_ctx.num_buffers < 2 */	)
 		{
 			LOGS_ERR("Unable to continue no buffer address in display render_context\n");
 			return -1;
@@ -438,7 +438,7 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	}
 
 	/* Select the vertex array which includes the vertices and indices describing the window rectangle. */
-	glBindVertexArray(disp->vertex_array);
+//	glBindVertexArray(disp->vertex_array);
 
 	
 	/*
@@ -466,8 +466,8 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	else{
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-		
+		//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width,disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 	}
 	error = glGetError();
 	
@@ -510,8 +510,8 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 		glUniform1i(disp->location[1], 1);
 		glUniform1i(disp->location[4], disp->im_process);
 		//glUniform1i(disp->location[7], 0);
-		glUniform1i(disp->location[2], opt->im_width);
-		glUniform1i(disp->location[3], opt->im_height);
+		glUniform1i(disp->location[2], opt->win_width);
+		glUniform1i(disp->location[3], opt->win_height);
 	 }
 	 if(opt->rgbtext)
 	 {
@@ -525,12 +525,12 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-	glBindVertexArray(0);
+//	glBindVertexArray(0);
 
 	if(opt->rgbtext)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER,0);
-		glBindVertexArray(disp->vertex_array);
+//		glBindVertexArray(disp->vertex_array);
 		glUseProgram(disp->program[1]);
 		error = glGetError();
 		if (error != GL_NO_ERROR)
@@ -541,9 +541,8 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[2]);
 		glUniform1i(disp->location[4], disp->im_process);
-		//glUniform1i(disp->location[7], 0);
-		glUniform1i(disp->location[5], opt->im_width);
-		glUniform1i(disp->location[6], opt->im_height);
+		glUniform1i(disp->location[5], opt->win_width);
+		glUniform1i(disp->location[6], opt->win_height);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	}
 	/*
@@ -560,10 +559,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 }
 
 
-int render2_nv12m_subs_tex(struct display_context *disp, struct options* opt, struct capture_context *cap)
-{
-	return 0;
-}
 
 
 
@@ -677,6 +672,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		else{
 			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "nv12frag.glsl"));
 		}
+		GCHK(disp->location[1] = glGetUniformLocation(disp->program[0], "s_chroma_texture"));
 	}
 	if(opt->rgbtext)
 	{
@@ -684,14 +680,10 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
 		GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
 		GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));
-		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
-		GCHK(disp->location[3] = glGetUniformLocation(disp->program[0], "uimage_height"));
-		GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
+		
 	}
 	else{
-		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
-		GCHK(disp->location[3] = glGetUniformLocation(disp->program[0], "uimage_height"));
-		GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
+		
 	}
 	/*
 	 * Get a handle to the s_luma_texture variable in the fragment shader.
@@ -700,26 +692,9 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	
 	GCHK(disp->location[0] = glGetUniformLocation(disp->program[0], "s_luma_texture"));
-	if(opt->ddump){
-		GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
-	
-	}
-	else{
-		GCHK(disp->location[1] = glGetUniformLocation(disp->program[0], "s_chroma_texture"));
-		
-	}
-	if(opt->rgbtext){
-		
-	}
-	else{/*
-		disp->location[3] = glGetUniformLocation(disp->program[0], "image_proc");
-			
-		if (disp->location[3] == -1)
-		{
-			LOGS_ERR("Unable to get location program %s", string_gl_error(glGetError()));
-			goto cleanup;
-		}*/
-	}
+	GCHK(disp->location[2] = glGetUniformLocation(disp->program[0], "uimage_width"));
+	GCHK(disp->location[3] = glGetUniformLocation(disp->program[0], "uimage_height"));
+	GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
 	/*
 	 * Get a handle to the s_chroma_texture variable in the fragment shader.
 	 * This handle is used to update the texture with each new camera frame.
@@ -759,7 +734,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	/* Copy the texture co-ordinates to the GPU to be used in a_tex_coord */
 	GCHK(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (const void*)(3 * sizeof(GLfloat))));
 	/* Select the default vertex array, allowing the application's array to be unbound */
-	glBindVertexArray(0);
+//	glBindVertexArray(0);
 
 	/* Generate two textures, the first for luma data, the second for chroma data */
 	glGenTextures(3, disp->texture);
@@ -768,7 +743,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		//GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,disp->width, disp->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
-		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,disp->width, disp->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
 		setTexParam();
 		
 	
@@ -795,7 +770,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	if(!opt->ddump){
 		glBindTexture(GL_TEXTURE_2D, disp->texture[1]);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,disp->width/2, disp->height/2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL));
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,opt->im_width/2,opt->im_height/2/*disp->width/2, disp->height/2*/, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL));
 		setTexParam();
 		
 
@@ -823,44 +798,8 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	 * If render never reached then a white screen will appear.
 	 */
 	glClearColor ( 1.0f, 0.6f, 0.0f, 0.0f );
-	if(opt->eglimage){
-		/*
-		EGLImageKHR img;
-		int w=1920/2;
-		int h=1080;
-		if(!opt->ddump){
-			w=1280/4;
-			h=960;	
-		}
-		for (int i = 0; i < cap->num_buf; i++)
-		{
-			img=create_image(w, h, 0, cap->buffers[i].dma_buf_fd[0]);
-			if(img==EGL_NO_IMAGE_KHR){
-				printf(" can not make egl image\n");		
-				exit(-1);
-			}
-			disp->img1[i]=img;
-		}
-		if(!opt->ddump){
-			for (int i = 0; i < cap->num_buf; i++)
-			{
-				img=create_image(w, h/2, w*4*h, cap->buffers[i].dma_buf_fd[0]);
-				if(img==EGL_NO_IMAGE_KHR){
-					printf(" can not make egl image\n");		
-					exit(-1);
-				}
-				disp->img2[i]=img;
-			}
-		}
-		*/
-		disp->render_func = render_nv12m_subs_tex;
-	}
-	else{
-		printf(" not make egl image\n");
-		
-		/* Finally save the pointer to the render function that will be used to update the surface */
-		disp->render_func = render_nv12m_subs_tex;
-	}
+	disp->render_func = render_nv12m_subs_tex;
+	
 	return 0;
 cleanup:
 	x11_close_display(disp);
