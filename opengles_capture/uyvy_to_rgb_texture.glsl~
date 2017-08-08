@@ -43,14 +43,14 @@
 	int xcor=int (xcoord);
 		//int step=uimage_width/320;
 		int remi= 1920 % uimage_width;
-	//if(uimage_width==	
+		
 	if(remi==0) 
 	{				
 	      yuv.y = luma_chroma.g;	
 	      yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g;	
 	 }	
 	else 
-	{	if (0.0 != mod(xcoord , 2.0)) {	// even
+	{	if (0.0 == mod(xcoord , 2.0)) {	// even
 			yuv.y = luma_chroma.g;
 			yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	    
 		}

@@ -96,6 +96,7 @@ void usage(char * const argv[])
 	printf("-1, --win_height the height for display/view window  default=810\n");
 	printf("-2, --im_width  the width  for texture  default=1920\n");
 	printf("-3, --im_height the height for texture  default=1080\n");
+	printf("-4 , --rgbtext  !=1 first copy image to frame buffer texture as rgb then render to display  =1 for copy to display directly\n");
 }
 
 /**
@@ -110,13 +111,22 @@ void set_default_options(struct options *opt)
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
 	opt->dma_export = true;
-	opt->ddump=false;//true;
+	opt->ddump=true;
 	opt->eglimage=true;
 	opt->rgbtext=true;
-	opt->im_width=1280;//1920;
-	opt->im_height=960;//1080;
-	opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
-	opt->win_height=960;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	if(opt->ddump){
+		opt->im_width=1920;
+		opt->im_height=1080;
+		opt->win_width=1920;
+		opt->win_height=1080;
+	}
+	else{
+		
+		opt->im_width=1280;//1920;
+		opt->im_height=960;//1080;
+		opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
+		opt->win_height=960;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	}
 }
 
 
@@ -144,6 +154,7 @@ int get_options(struct options *opt, int argc, char * const argv[])
 		{"win_height",			required_argument,	0, '1'},
 		{"im_width",			required_argument,	0, '2'},
 		{"im_height",			required_argument,	0, '3'},
+		{"rgbtext",			required_argument,	0, '4'},
 		{0},
 	};
 

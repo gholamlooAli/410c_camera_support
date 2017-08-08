@@ -42,22 +42,19 @@
 	yuv.x = luma_chroma.a;
 	int xcor=int (xcoord);
 		//int step=uimage_width/320;
-		int remi= 1920 % uimage_width;
-	//if(uimage_width==	
-	if(remi==0) 
-	{				
+		int remi=xcor%2;
+		if (0.0 != mod(xcoord , 2.0)) 	// even
+	  //if(remi==0) 
+	   {				
 	      yuv.y = luma_chroma.g;	
+//yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x - float(1.0f/960.0f)/*texel_width*/, v_tex_coord.y)).b; 
 	      yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g;	
-	 }	
-	else 
-	{	if (0.0 != mod(xcoord , 2.0)) {	// even
-			yuv.y = luma_chroma.g;
-			yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	    
-		}
-		else{	// odd
-			yuv.z = luma_chroma.g;
-			yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).g; 	    
-		}
+	    }	
+	else // odd
+	{	
+	      yuv.z = luma_chroma.g;
+//yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x + float(1.0f/960.0f)/*texel_width*/, v_tex_coord.y)).r;		
+	      yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).g; 	    
 	}	
 	  
 	yuv += offset;

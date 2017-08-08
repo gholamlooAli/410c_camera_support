@@ -111,13 +111,22 @@ void set_default_options(struct options *opt)
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
 	opt->dma_export = true;
-	opt->ddump=false;//true;
+	opt->ddump=true;
 	opt->eglimage=true;
 	opt->rgbtext=true;
-	opt->im_width=1280;//1920;
-	opt->im_height=960;//1080;
-	opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
-	opt->win_height=960;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	if(opt->ddump){
+		opt->im_width=1920;
+		opt->im_height=1080;
+		opt->win_width=1440;
+		opt->win_height=720;
+	}
+	else{
+		
+		opt->im_width=1280;//1920;
+		opt->im_height=960;//1080;
+		opt->win_width=1280;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
+		opt->win_height=960;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+	}
 }
 
 

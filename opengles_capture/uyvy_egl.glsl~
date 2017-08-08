@@ -1,8 +1,8 @@
-	#version 300 es 			
+      #version 300 es 			
       
 		
-	precision mediump float;                            
-	in vec2 v_tex_coord;                            
+       precision mediump float;                            
+       in vec2 v_tex_coord;                            
       	uniform mediump int image_proc;				
 	uniform mediump int uimage_width;				
 	uniform sampler2D s_luma_texture;                        
@@ -12,8 +12,7 @@
 	// Temporary variable for YUV value	
 	vec3 yuv;	
 	// Temporary variable for RGB value	
-	vec3 rgb;
-	
+	vec3 rgb;	
 	
       void main()                                         
 	
@@ -32,32 +31,23 @@
 	vec3 yuv;		       
 	vec4 res;		       
 	texture_width=float(uimage_width);	
-	//texture_width=float(1980);	
-	texel_width=1.0f/texture_width;
-	      texel_width=1.0f/(960.0f*2.0f*4.0f);
+	texel_width=1.0/texture_width;
 	xcoord = floor (v_tex_coord.x * texture_width);	
 	luma_chroma = texture2D(s_luma_texture, v_tex_coord);	
 	// just look up the brightness
-	//yuv.x = (luma_chroma.a - 0.0625) * 1.1643;	
-	yuv.x = luma_chroma.a;
-	int xcor=int (xcoord);
-		//int step=uimage_width/320;
-		int remi= 1920 % uimage_width;
-	//if(uimage_width==	
-	if(remi==0) 
+	   
+	yuv.y = luma_chroma.b;	
+	yuv.z = luma_chroma.r;	
+	   
+	if (0.0 != mod(xcoord , 2.0)) 	// even
 	{				
-	      yuv.y = luma_chroma.g;	
-	      yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g;	
-	 }	
-	else 
-	{	if (0.0 != mod(xcoord , 2.0)) {	// even
-			yuv.y = luma_chroma.g;
-			yuv.z = texture2D(s_luma_texture,vec2(v_tex_coord.x + texel_width, v_tex_coord.y)).g; 	    
-		}
-		else{	// odd
-			yuv.z = luma_chroma.g;
-			yuv.y = texture2D(s_luma_texture,vec2(v_tex_coord.x - texel_width, v_tex_coord.y)).g; 	    
-		}
+		//yuv.x = (luma_chroma.a - 0.0625) * 1.1643;
+		yuv.x = luma_chroma.a ;	
+	}	
+	else // odd
+	{	
+		//yuv.x = (luma_chroma.g - 0.0625) * 1.1643;
+		yuv.x = luma_chroma.g ;	
 	}	
 	  
 	yuv += offset;
@@ -73,17 +63,16 @@
 		break;
 		
 		case 3://u
-			rgb.r = yuv.y+0.5;
-			rgb.g = yuv.y+0.5;
-			rgb.b = yuv.y+0.5;
+			rgb.r = yuv.y;
+			rgb.g = yuv.y;
+			rgb.b = yuv.y;
 		break;
 		
 		case 4://v
-			rgb.r = yuv.z+0.5;
-			rgb.g = yuv.z+0.5;
-			rgb.b = yuv.z+0.5;
+			rgb.r = yuv.z;
+			rgb.g = yuv.z;
+			rgb.b = yuv.z;
 		break;
-		
 		case 5://r
 			rgb.g=0.0f;
 			rgb.b=0.0f;

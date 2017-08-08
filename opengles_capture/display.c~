@@ -466,15 +466,19 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	else{
 	//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, disp->width, disp->height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
 		glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
-		//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, opt->im_width, opt->im_height, /*disp->width,disp->height,*/GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		if(opt->ddump){
+			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, opt->im_width, opt->im_height, /*disp->width,disp->height,*/GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		}
+		else{
+			//glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, /*1920,1080*/disp->render_ctx.texture_width,disp->render_ctx.texture_height,GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+			glTexSubImage2D(GL_TEXTURE_2D, 0,0, 0, opt->im_width, opt->im_height, /*disp->width,disp->height,*/GL_LUMINANCE, GL_UNSIGNED_BYTE, disp->render_ctx.buffers[0]);
+		}
 	}
 	error = glGetError();
 	
 	/* Indicate that GL_TEXTURE0 is s_luma_texture from previous lookup */
 	glUniform1i(disp->location[0], 0);
-	//glUniform1i(disp->location[2], disp->render_ctx.texture_width);
-
+	
 	/*
 	 * Copy the chroma data from plane 1 to the s_chroma_texture texture in the GPU.
 	 * Each texture has four components, x,y,z,w alias r,g,b,a alias s,r,t,u.
@@ -508,15 +512,29 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 		
 		/* Indicate that GL_TEXTURE1 is s_chroma_texture from previous lookup */
 		glUniform1i(disp->location[1], 1);
-		glUniform1i(disp->location[4], disp->im_process);
+		
 		//glUniform1i(disp->location[7], 0);
+		
+	 }
+	if(opt->ddump){ 
+		if(!opt->eglimage){
+			glUniform1i(disp->location[2], opt->win_width);
+			
+		}
+		else{
+			glUniform1i(disp->location[2], opt->win_width);
+		}
+		
+	}
+	else{
 		glUniform1i(disp->location[2], opt->win_width);
-		glUniform1i(disp->location[3], opt->win_height);
-	 }
-	 if(opt->rgbtext)
-	 {
+	}
+	glUniform1i(disp->location[3], opt->win_height);
+	glUniform1i(disp->location[4], disp->im_process); 
+	if(opt->rgbtext)
+	{
 		 glBindFramebuffer(GL_FRAMEBUFFER, disp->framebuffer[0]);
-	 }
+	}
 	/*
 	 * Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
 	 * The fourth parameter, indices value here is passed as null since the values are already
@@ -525,7 +543,6 @@ int render_nv12m_subs_tex(struct display_context *disp, struct options* opt, str
 	 */
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	/** Select the default vertex array, allowing the applications array to be unbound */
-//	glBindVertexArray(0);
 
 	if(opt->rgbtext)
 	{
@@ -567,6 +584,15 @@ int setTexParam(void)
 {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
+	return 0;
+}
+int setTexParam2(void)
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R_OES, GL_CLAMP_TO_EDGE);
@@ -653,16 +679,14 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	
 	if(opt->ddump){	//direct dump to memory
+		
 		if(opt->eglimage){
 			
-			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
-			GCHK(disp->location[4] = glGetUniformLocation(disp->program[0], "image_proc"));
-			GCHK(disp->location[3] = glGetUniformLocation(disp->program[1], "image2_proc"));
-			
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_egl.glsl"));
 			
 		}
 		else{
-			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "fShaderStr.glsl"));
+			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
 		}
 	}
 	else{
@@ -740,8 +764,15 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	
 	glBindTexture(GL_TEXTURE_2D, disp->texture[0]);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
-	setTexParam();
+	if(opt->ddump){
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL));
+		setTexParam();
+	}
+	else{
+		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));
+		setTexParam();
+	}
+	
 		
 	
 	/*
