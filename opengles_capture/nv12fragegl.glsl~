@@ -29,7 +29,7 @@
 		xcoord = floor (v_tex_coord.x * float(uimage_width));
 		int xcor=int (xcoord);
 		int step=uimage_width/320;
-		int remi=xcor%2;//step;
+		int remi=xcor%step;
 		if (0 == remi) {	// this is to prevent texture bleeding (tex. coordinate offset)
 			yuv.x = texture2D(s_luma_texture,vec2( v_tex_coord.x-texel_width,v_tex_coord.y)).a;
 		}
@@ -45,7 +45,7 @@
 		yuv.yz = texture2D(s_chroma_texture, v_tex_coord).xw;
 		//yuv.x = texture2D(s_luma_texture, v_tex_coord).x;
 		yuv += offset;
-		rgb = coeff * yuv;
+		rgb = coeff * yuv;/*
 		switch (image_proc)		
 		{	
 			case 0:
@@ -79,7 +79,7 @@
 				rgb.r=0.0f;
 				rgb.g=0.0f;
 			break;
-		}
+		*/
 		
 			
 		out_color = vec4(rgb,1);

@@ -33,12 +33,14 @@
 			h_edge += texture2D(s_luma_texture, vec2(v_tex_coord.x + x, v_tex_coord.y +y )) * 1.0;
 		
 			vec4 v_edge=vec4(0.0);
+
 			v_edge -= texture2D(s_luma_texture, vec2(v_tex_coord.x - x, v_tex_coord.y -y )) * 1.0;
 			v_edge -= texture2D(s_luma_texture, vec2(v_tex_coord.x    , v_tex_coord.y -y )) * 2.0;
 			v_edge -= texture2D(s_luma_texture, vec2(v_tex_coord.x + x, v_tex_coord.y -y )) * 1.0;
 			v_edge += texture2D(s_luma_texture, vec2(v_tex_coord.x - x, v_tex_coord.y +y )) * 1.0;
 			v_edge += texture2D(s_luma_texture, vec2(v_tex_coord.x    , v_tex_coord.y +y )) * 2.0;
 			v_edge += texture2D(s_luma_texture, vec2(v_tex_coord.x + x, v_tex_coord.y +y )) * 1.0;
+		
 			vec4 tot = sqrt(v_edge*v_edge+h_edge*h_edge);
 			/*
 			vec4 tm1m1 = texture2D(s_luma_texture,v_tex_coord+vec2(-1,-1)*texelsize);
