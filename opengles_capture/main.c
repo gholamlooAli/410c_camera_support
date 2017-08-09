@@ -117,15 +117,15 @@ void set_default_options(struct options *opt)
 	if(opt->ddump){
 		opt->im_width=1920;
 		opt->im_height=1080;
-		opt->win_width=640;
-		opt->win_height=480;
+		opt->win_width=0;//720;
+		opt->win_height=0;//360;
 	}
 	else{
 		
 		opt->im_width=1280;//1920;
 		opt->im_height=960;//1080;
-		opt->win_width=640;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
-		opt->win_height=480;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
+		opt->win_width=0;//640;//1440;//1920;//1280;//640;//1440;//1920;//1280;//640;//960;//640;//1920;;//
+		opt->win_height=0;//480;//720;//1080;//960;//480;//720;//1080;//960;//480;//540;//480;// 1080;
 	}
 }
 
@@ -279,21 +279,24 @@ int main(int argc, char * const argv[])
 	char * mydev= opt->dev_name;
 	mydev+=10;
 	if(*mydev=='3'){
-		printf("_____________________________________________________");
 		opt->ddump=false;
 		system("/home/linaro/410c_camera_support/opengles_capture/nv12_1280.sh");
 		opt->im_width=1280;
 		opt->im_height=960;
-		//opt->win_width=1280;
-		//opt->win_height=960;
+		if(opt->win_width==0)
+			opt->win_width=640;
+		if(opt->win_height==0)
+			opt->win_height=480;
 	}	
 	else{
 		opt->ddump=true;
 		system("/home/linaro/410c_camera_support/opengles_capture/ddump.sh");
 		opt->im_width=1920;
 		opt->im_height=1080;
-		//opt->win_width=1440;
-		//opt->win_height=720;
+		if(opt->win_width==0)
+			opt->win_width=720;
+		if(opt->win_height==0)
+			opt->win_height=360;
 	}
 	ret = g_program_options.program_use->function(cap, disp, &g_program_options);
 
