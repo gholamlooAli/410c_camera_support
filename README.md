@@ -1,5 +1,5 @@
-# 410c_camera_support
-This github is forked from D3 Engineering website to evaluate the camera module for dragon board 410c.
+# 410c camera image processing with gpu
+This github originally was forked from D3 Engineering website and developed to evaluate the camera module for dragon board 410c and the capability of snapdragon 410 gpu .
 
 To run the application go to opengles_capture folder and run the following command:
 
