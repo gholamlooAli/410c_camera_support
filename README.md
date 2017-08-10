@@ -19,7 +19,7 @@ the following are the accepted keyword :
 
 -4 !=1 first copy image to frame buffer texture as rgb then render to display  -4=1 for copy to display directl
 
-while application is running press the following key for image processing:
+## while application is running press the following key for image processing:
 	
 press y to show only the y portion (luminance)
 
