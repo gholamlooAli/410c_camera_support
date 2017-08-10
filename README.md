@@ -38,3 +38,5 @@ the following are the accepted keyword :
 **press s** to apply soble filter for edge detection
 
 **press q** to quit	
+
+**for more details please review the wiki pages
