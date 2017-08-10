@@ -11,13 +11,13 @@ the following are the accepted keyword :
 	
 **-h** to print help
 
-**-e** 0 for EGLImage zero memory copy or -e 1 for loading buffer to gpu memory
+**-e** 0 for EGLImage zero memory copy or **-e 1** for loading buffer to gpu memory, default is zero memory copy
 
-**-0** to define the desired display window width
+**-0** to define the desired display window width, default for ddump is 960 and for egl 640
 
-**-1** to define the desired display window height
+**-1** to define the desired display window height, default for ddump is 540 and for egl 480
 
-**-4** !=1 first copy image to frame buffer texture as rgb then render to display  -4=1 for copy to display directl
+**-4** !=1 first copy image to frame buffer texture as rgb then render to display  -4=1 for copy to display directly, default is frame buffer 
 
 ## while application is running press the following key for image processing:
 	
