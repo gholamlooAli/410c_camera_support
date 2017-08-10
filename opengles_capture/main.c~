@@ -284,15 +284,15 @@ int main(int argc, char * const argv[])
 		opt->im_width=1280;
 		opt->im_height=960;
 		if(opt->win_width==0)
-			opt->win_width=1280;
+			opt->win_width=640;
 		if(opt->win_height==0)
-			opt->win_height=960;
+			opt->win_height=480;
 	}	
 	else{
 		opt->ddump=true;
 		system("/home/linaro/410c_camera_support/opengles_capture/ddump.sh");
-		opt->im_width=640;
-		opt->im_height=480;
+		opt->im_width=1920;
+		opt->im_height=1080;
 		if(opt->win_width==0)
 			opt->win_width=720;
 		if(opt->win_height==0)

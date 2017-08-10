@@ -294,9 +294,9 @@ int main(int argc, char * const argv[])
 		opt->im_width=1920;
 		opt->im_height=1080;
 		if(opt->win_width==0)
-			opt->win_width=720;
+			opt->win_width=960;
 		if(opt->win_height==0)
-			opt->win_height=360;
+			opt->win_height=540;
 	}
 	ret = g_program_options.program_use->function(cap, disp, &g_program_options);
 

@@ -66,6 +66,11 @@
 				rgb.r=0.0f;
 				rgb.g=0.0f;
 			break;
+			case 9://o for threshold
+				vec3 col=vec3(0.5f,0.5f,0.5f);
+				rgb = vec3(greaterThanEqual(rgb,col));
+				
+			break;
 		}
 		//rgb=tot;
 	    out_color = vec4(rgb,1);

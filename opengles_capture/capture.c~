@@ -349,7 +349,7 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 			disp->cur_bufferindex=buf.index;
 		}
 		
-		if(!opt->ddump
+		if(!opt->ddump){
 			disp->render_ctx.buffers[1]=disp->render_ctx.buffers[0]+(opt->im_width*opt->im_height);
 			//disp->render_ctx.buffers[1] = (1280*960)+cap->buffers[buf.index].addr[0];
 		}

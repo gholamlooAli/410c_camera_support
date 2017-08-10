@@ -45,7 +45,7 @@
 		yuv.yz = texture2D(s_chroma_texture, v_tex_coord).xw;
 		//yuv.x = texture2D(s_luma_texture, v_tex_coord).x;
 		yuv += offset;
-		rgb = coeff * yuv;/*
+		rgb = coeff * yuv;
 		switch (image_proc)		
 		{	
 			case 0:
@@ -79,7 +79,12 @@
 				rgb.r=0.0f;
 				rgb.g=0.0f;
 			break;
-		*/
+			case 9://threshold
+				vec3 col=vec3(0.5f,0.5f,0.5f);
+				rgb = vec3(greaterThanEqual(rgb,col));
+				
+			break;
+		}
 		
 			
 		out_color = vec4(rgb,1);
