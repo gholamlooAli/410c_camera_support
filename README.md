@@ -3,9 +3,9 @@ This github is forked from D3 Engineering website to evaluate the camera module 
 
 To run the application go to opengles_capture folder and run the following command:
 
-# ./capture -d /dev/video0 -s /dev/v4l-subdev10 for direct dump to memory mode
+## ./capture -d /dev/video0 -s /dev/v4l-subdev10 for direct dump to memory mode
 
-# ./capture -d /dev/video3 -s /dev/v4l-subdev10 for NV12 format mode
+## ./capture -d /dev/video3 -s /dev/v4l-subdev10 for NV12 format mode
 
 the following are the accepted keyword :
 	
