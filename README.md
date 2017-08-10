@@ -39,4 +39,4 @@ the following are the accepted keyword :
 
 **press q** to quit	
 
-**for more details please review the wiki pages
+**for more details please review the wiki pages**
