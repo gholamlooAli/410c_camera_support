@@ -63,25 +63,41 @@ static volatile int signal_quit = 0;
  * @param buf Pointer to V4L2 buffer allocation.
  * @param type V4L2 memory type used for the buffer.
  */
-void print_v4l2_buffer(struct v4l2_buffer *buf, uint32_t type)
+void print_v4l2_buffer(struct v4l2_buffer *buf, uint32_t type, struct options* opt)
 {
 	LOGS_DBG("Buffer #%d", buf->index);
 
 	LOGS_DBG("\ttype:   %d", buf->type);
 	LOGS_DBG("\tmemory: %d", buf->memory);
-	if (buf->m.planes != 0)
-	{
-		for (unsigned int p = 0; p < buf->length; p++)
+	if(opt->splane){
+		for (int p = 0; p < opt->num_buf; p++)
 		{
-			LOGS_DBG("\t - Plane#: %d",  p);
-			LOGS_DBG("\t - used:   %d",  buf->m.planes[p].bytesused);
-			LOGS_DBG("\t - length: %d",  buf->m.planes[p].length);
+			LOGS_DBG("\t - used:   %d",  buf->bytesused);
+			LOGS_DBG("\t - length: %d",  buf->length);
 			if (type == V4L2_MEMORY_MMAP) {
-				LOGS_DBG("\t - offset: %d",  buf->m.planes[p].m.mem_offset);
+				LOGS_DBG("\t - offset: %d",  buf->m.offset);
 			} else if (type == V4L2_MEMORY_USERPTR) {
-				LOGS_DBG("\t - usrptr: %lu", buf->m.planes[p].m.userptr);
+				LOGS_DBG("\t - usrptr: %lu", buf->m.userptr);
 			} else if (type == V4L2_MEMORY_DMABUF) {
-				LOGS_DBG("\t - fd:     %d",  buf->m.planes[p].m.fd);
+				LOGS_DBG("\t - fd:     %d",  buf->m.fd);
+			}
+		}
+	}
+	else{
+		if (buf->m.planes != 0)
+		{
+			for (unsigned int p = 0; p < buf->length; p++)
+			{
+				LOGS_DBG("\t - Plane#: %d",  p);
+				LOGS_DBG("\t - used:   %d",  buf->m.planes[p].bytesused);
+				LOGS_DBG("\t - length: %d",  buf->m.planes[p].length);
+				if (type == V4L2_MEMORY_MMAP) {
+					LOGS_DBG("\t - offset: %d",  buf->m.planes[p].m.mem_offset);
+				} else if (type == V4L2_MEMORY_USERPTR) {
+					LOGS_DBG("\t - usrptr: %lu", buf->m.planes[p].m.userptr);
+				} else if (type == V4L2_MEMORY_DMABUF) {
+					LOGS_DBG("\t - fd:     %d",  buf->m.planes[p].m.fd);
+				}
 			}
 		}
 	}
@@ -151,7 +167,7 @@ int unmap_buffers(struct capture_context *cap)
  * @param dma_export Flag to request that DMA exports for each plane are performed.
  * @return error status of the map. Value 0 is returned on success.
  */
-int map_buffers(struct capture_context *cap, bool dma_export)
+int map_buffers(struct capture_context *cap, bool dma_export, struct options* opt)
 {
 	struct v4l2_buffer *buf;
 	struct v4l2_exportbuffer dma_buf;
@@ -167,7 +183,10 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 		/** For each allocated buffer, request the v4l2 information */
 		buf = &cap->buffers[i].v4l2buf;
 		buf->m.planes = cap->buffers[i].v4l2planes;
-		buf->length = cap->num_buf;
+		if(!opt->splane)
+			buf->length = cap->num_buf;
+		else
+			opt->num_buf= cap->num_buf;
 		buf->type = cap->type;
 		buf->memory = cap->memory;
 		buf->index = i;
@@ -179,16 +198,22 @@ int map_buffers(struct capture_context *cap, bool dma_export)
 			return ret;
 		}
 
-		print_v4l2_buffer(buf, cap->type);
+		print_v4l2_buffer(buf, cap->type, opt);
 		for (int p = 0; p < cap->num_planes; p++)
 		{
 			/* Separately memory map each plane to its own user space address */
-			cap->buffers[i].length[p] = buf->m.planes[p].length;
-			LOGS_DBG("buf->m.planes[p].length=%d   cap->v4l2_fd=%d", buf->m.planes[p].length, cap->v4l2_fd);
+			if(opt->splane){
+				cap->buffers[i].length[p] = buf->length;
+				LOGS_DBG("single plane buf->length=%d   buf->m.offset=%d  cap->v4l2_fd=%d", buf->length, buf->m.offset, cap->v4l2_fd);
 	
-			cap->buffers[i].addr[p] = mmap(NULL, buf->m.planes[p].length,
-				PROT_READ | PROT_WRITE, MAP_SHARED,
-				cap->v4l2_fd, buf->m.planes[p].m.mem_offset);
+				cap->buffers[i].addr[p] = mmap(NULL, buf->length, PROT_READ | PROT_WRITE, MAP_SHARED, cap->v4l2_fd, buf->m.offset);
+			}
+			else{
+				cap->buffers[i].length[p] = buf->m.planes[p].length;
+				LOGS_DBG("buf->m.planes[p].length=%d   cap->v4l2_fd=%d", buf->m.planes[p].length, cap->v4l2_fd);
+	
+				cap->buffers[i].addr[p] = mmap(NULL, buf->m.planes[p].length, PROT_READ | PROT_WRITE, MAP_SHARED, cap->v4l2_fd, buf->m.planes[p].m.mem_offset);
+			}
 			if (cap->buffers[i].addr[p] == MAP_FAILED)
 			{
 				LOGS_ERR("Unable to mmap buffer. Error #%d: %s", errno, strerror(errno));
@@ -247,9 +272,12 @@ int queue_buffers(int fd, int count, struct video_buf_map buffers[])
  * @param fd file descriptor for the V4L2 device.
  * @return error status of the function. Value 0 is returned on success.
  */
-int start_stream(int fd)
+int start_stream(int fd, struct options* opt)
 {
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+	if(opt->splane){
+		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	}
 	return ioctl(fd, VIDIOC_STREAMON, &type);
 }
 
@@ -258,9 +286,12 @@ int start_stream(int fd)
  * @param fd file descriptor for the V4L2 device.
  * @return error status of the function. Value 0 is returned on success.
  */
-int stop_stream(int fd)
+int stop_stream(int fd, struct options* opt)
 {
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+	if(opt->splane){
+		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	}
 	return ioctl(fd, VIDIOC_STREAMOFF, &type);
 }
 
@@ -285,9 +316,10 @@ int capture_display_yuv(struct capture_context *cap, struct display_context *dis
 	/* initilize the buffer type reference to hold the dequeued buffer info. */
 	buf.type = cap->type;
 	buf.memory = cap->memory;
-	buf.length = cap->num_planes;
-	buf.m.planes = planes;
-
+	if(!opt->splane){
+		buf.length = cap->num_planes;
+		buf.m.planes = planes;
+	}
 	/* Select an empty buffer for priming the video display */
 	disp->render_ctx.num_buffers = cap->num_planes;
 	disp->render_ctx.texture_width=opt->im_width;
@@ -417,10 +449,14 @@ int get_device(const char* device)
 	}
 
 	ioctl(fd, VIDIOC_QUERYCAP, &cap);
-
-	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
-		LOGS_ERR("device does not have multiple plane capture capabilities");
-		fd = -1;
+	if(opt->splane){
+		//
+	}
+	else{
+		if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)) {
+			LOGS_ERR("device does not have multiple plane capture capabilities");
+			fd = -1;
+		}
 	}
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 		LOGS_ERR("device does not have streaming capabilities");
@@ -438,9 +474,9 @@ int get_device(const char* device)
  * @param cap Capture data management structure with V4L2 buffer mapping.
  * @return rror status of the shutdown. Value 0 is returned on success.
  */
-int capture_shutdown(struct capture_context *cap)
+int capture_shutdown(struct capture_context *cap, struct options *opt)
 {
-	stop_stream(cap->v4l2_fd);
+	stop_stream(cap->v4l2_fd, opt);
 	return unmap_buffers(cap);
 }
 
@@ -462,15 +498,21 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	 * NV12 is used by the render routine which has two planes.
 	 * First plane is luma, second plane is chroma at 1/4 resolution.
 	 */
-	if(opt->ddump)
-	{
-		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-		cap->num_planes = 1;
+	if(opt->splane){
+		if(opt->ddump)	{
+			cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			cap->num_planes = 1;
+		}
 	}
-	else
-	{
-		cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-		cap->num_planes = 1;
+	else{
+		if(opt->ddump)	{
+			cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+			cap->num_planes = 1;
+		}
+		else {
+			cap->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+			cap->num_planes = 1;
+		}
 	}
 	cap->memory = V4L2_MEMORY_MMAP;
 	
@@ -486,18 +528,32 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 		LOGS_ERR("Unable to get format %d", ret);
 		exit(-errno);
 	}
-	
-	if(opt->ddump)
-	{
-		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
+	if(opt->splane){
+		if(opt->ddump)
+		{
+			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+			
+		}
+		else{
+			//fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+		}
+		fmt.fmt.pix.width = opt->im_width;//1920;
+		fmt.fmt.pix.height= opt->im_height;//1080;
+		LOGS_DBG("cap->v4l2_fd= %d", cap->v4l2_fd);
 	}
 	else{
-		fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+		if(opt->ddump)
+		{
+			fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_UYVY;
+		}
+		else{
+			fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+		}
+		fmt.fmt.pix_mp.num_planes = cap->num_planes;
+		fmt.fmt.pix_mp.width = opt->im_width;//1920;
+		fmt.fmt.pix_mp.height= opt->im_height;//1080;
+		LOGS_DBG("cap->v4l2_fd= %d", cap->v4l2_fd);
 	}
-	fmt.fmt.pix_mp.num_planes = cap->num_planes;
-	fmt.fmt.pix_mp.width = opt->im_width;//1920;
-	fmt.fmt.pix_mp.height= opt->im_height;//1080;
-	LOGS_DBG("cap->v4l2_fd= %d", cap->v4l2_fd);
 	ret = ioctl(cap->v4l2_fd, VIDIOC_S_FMT, &fmt);
 	if (ret < 0)
 	{
@@ -527,6 +583,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 
 	/* Save the number of buffers actually allocated and set the DMA desciptors to invalid descriptors. */
 	cap->num_buf = req.count;
+	opt->num_buf = cap->num_buf;
 	LOGS_DBG("request count=%d", req.count);
 	
 	for (int i = 0; i < cap->num_buf; i++)
@@ -534,7 +591,7 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 			cap->buffers[i].dma_buf_fd[p] = -1;
 
 	/* Memory map the buffers into user space */
-	ret = map_buffers(cap, opt->dma_export);
+	ret = map_buffers(cap, opt->dma_export, opt);
 	if (ret) goto cleanup;
 
 	/* initialize capture by queueing aloctaed buffers before streaming is enabled */
@@ -542,11 +599,11 @@ int capture_setup(struct capture_context *cap, struct options *opt)
 	if (ret) goto cleanup;
 
 	/* Start the video stream, this will setup initial settings on the subdevice. */
-	ret = start_stream(cap->v4l2_fd);
+	ret = start_stream(cap->v4l2_fd, opt);
 
 	return ret;
 cleanup:
-	capture_shutdown(cap);
+	capture_shutdown(cap, opt);
 	return ret;
 }
 
@@ -758,6 +815,9 @@ void do_key_event(char keys[], int num_keys, struct display_context* disp)
 			case 's':
 				disp->im_process=8;
 				break;
+			case 'o':
+				disp->im_process=9;
+				break;
 			
 			case 'h':
 				print_key_functions();
@@ -819,7 +879,7 @@ int capture_and_display(void* cap_ctx, void* disp_ctx, struct options* opt)
 		if (ret)
 		{
 			LOGS_ERR("Unable to start capture stream");
-			capture_shutdown(cap);
+			capture_shutdown(cap, opt);
 			return ret;
 		}
 
@@ -839,7 +899,7 @@ int capture_and_display(void* cap_ctx, void* disp_ctx, struct options* opt)
 		/* Enter the capture display loop */
 		ret = capture_display_yuv(cap, disp, opt);
 		/* Cleanly release the buffers map and free them in the kernel on either error or exit request. */
-		capture_shutdown(cap);
+		capture_shutdown(cap, opt);
 
 		return ret;
 }

@@ -71,6 +71,7 @@ struct usage {
  * Data structure for all user command line options.
  */
 struct options {
+ int splane;
  int im_width;
  int im_height;
  int win_width;
@@ -82,6 +83,7 @@ struct options {
 	int capture_count;
 	/** Number of buffers to allocate from the v4l2 device. */
 	int buffer_count;
+ int num_buf;
 	/** Export DMA file descriptor for each v4l2 plane. */
 	int dma_export;
 	/** V4L2 capture device path. */

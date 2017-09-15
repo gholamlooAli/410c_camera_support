@@ -110,13 +110,13 @@ void set_default_options(struct options *opt)
 	opt->subdev_name = (char*)DEFAULT_SUBDEVICE;
 	opt->buffer_count = DEFAULT_BUFFER_COUNT;
 	opt->program_use = opt->default_usage;
-	opt->dma_export = true;
-	opt->ddump=false;//true;
-	opt->eglimage=true;
-	opt->rgbtext=true;
+	opt->dma_export = false;
+	opt->ddump=true;
+	opt->eglimage=false;
+	opt->rgbtext=false;
 	if(opt->ddump){
-		opt->im_width=1920;
-		opt->im_height=1080;
+		opt->im_width=640;//1920;
+		opt->im_height=480;//1080;
 		opt->win_width=0;//720;
 		opt->win_height=0;//360;
 	}
@@ -288,7 +288,7 @@ int main(int argc, char * const argv[])
 		if(opt->win_height==0)
 			opt->win_height=480;
 	}	
-	else{
+	else if (*mydev=='0'){
 		opt->ddump=true;
 		system("/home/linaro/410c_camera_support/opengles_capture/ddump.sh");
 		opt->im_width=1920;
@@ -297,6 +297,17 @@ int main(int argc, char * const argv[])
 			opt->win_width=960;
 		if(opt->win_height==0)
 			opt->win_height=540;
+	}
+	else {
+		opt->ddump=true;
+		system("/home/linaro/410c_camera_support/opengles_capture/ddump.sh");
+		opt->im_width=640;
+		opt->im_height=480;
+		opt->splane=true;
+		if(opt->win_width==0)
+			opt->win_width=640;
+		if(opt->win_height==0)
+			opt->win_height=480;
 	}
 	ret = g_program_options.program_use->function(cap, disp, &g_program_options);
 

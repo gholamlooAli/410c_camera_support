@@ -277,12 +277,16 @@ int egl_init(struct display_context *disp)
 	 */
 	EGLConfig config;
 	ret = eglChooseConfig(egl_disp, config_attribs, &config, 1, &num_configs);
-	if (ret == EGL_FALSE || num_configs < 1)
+	if (ret == EGL_FALSE )
+	{
+		LOGS_ERR("ret=EGL_FALSE Unable to select config %s", string_egl_error(eglGetError()));
+		return -1;
+	}
+	if (num_configs < 1)
 	{
 		LOGS_ERR("Unable to select config %s", string_egl_error(eglGetError()));
 		return -1;
 	}
-
 	/*
 	 * Create a render surface that matches the native window created previously.
 	 * save the EGL surface handle to the display context.

@@ -766,7 +766,7 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	if(opt->ddump){
 		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NULL));
-		setTexParam();
+		setTexParam2();
 	}
 	else{
 		GCHK(glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE,opt->im_width,opt->im_height,/*disp->width, disp->height,*/ 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL));

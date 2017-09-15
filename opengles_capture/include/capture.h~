@@ -125,6 +125,6 @@ int capture_setup(struct capture_context *cap, struct options *opt);
  * @param opt User seelcted progam configuration options.
  * @return error status of the shutdown. Value 0 is returned on success.
  */
-int capture_shutdown(struct capture_context *cap, struct options *opt);
+int capture_shutdown(struct capture_context *cap);
 
 #endif
