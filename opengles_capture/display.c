@@ -54,11 +54,16 @@ PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
  * Shaders included in code for simplicity but could be external files.
  */
 static const char nv12_vertex_code[] =
-	"#version 300 es\n"
+	//"#version 300 es\n"
 	"//VERTEX_SHADER\n"
-	"layout(location = 0) in vec4 a_position;\n"
-	"layout(location = 1) in vec2 a_tex_coord;\n"
-	"out vec2 v_tex_coord;\n"
+	//"layout(location = 0) in vec4 a_position;\n"
+	//"layout(location = 1) in vec2 a_tex_coord;\n"
+	//"out vec2 v_tex_coord;\n"
+	
+	"attribute vec4 a_position;\n"
+	"attribute vec2 a_tex_coord;\n"
+	"varying vec2 v_tex_coord;\n"
+	
 	"void main()\n"
 	"{\n"
 	"   gl_Position = a_position;\n"
@@ -224,7 +229,7 @@ int egl_init(struct display_context *disp)
 		EGL_STENCIL_SIZE, 0,
 		EGL_ALPHA_SIZE, 0,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 		EGL_NONE };
 
 		/* Two X11 categories on dragonboard
@@ -690,7 +695,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 			
 		}
 		else{
-			GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
+			if(opt->splane){
+				GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "yuyv_to_rgb_texture.glsl"));
+			}
+			else{
+				GCHK(disp->program[0] = gles_load_program(nv12_vertex_code, "uyvy_to_rgb_texture.glsl"));
+			}
 		}
 	}
 	else{
@@ -704,7 +714,12 @@ int camera_nv12m_setup(struct display_context* disp, struct render_context *rend
 	}
 	if(opt->rgbtext)
 	{
-		GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
+		if(opt->splane){
+			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render_es1.glsl"));
+		}
+		else{
+			GCHK(disp->program[1] = gles_load_program(nv12_vertex_code, "frgb_render.glsl"));
+		}
 		GCHK(disp->location[5] = glGetUniformLocation(disp->program[1], "uimage_width"));
 		GCHK(disp->location[6] = glGetUniformLocation(disp->program[1], "uimage_height"));
 		GCHK(disp->location[7] = glGetUniformLocation(disp->program[1], "s_luma_texture"));

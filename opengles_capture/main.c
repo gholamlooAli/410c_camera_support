@@ -113,7 +113,7 @@ void set_default_options(struct options *opt)
 	opt->dma_export = false;
 	opt->ddump=true;
 	opt->eglimage=false;
-	opt->rgbtext=false;
+	opt->rgbtext=true;
 	if(opt->ddump){
 		opt->im_width=640;//1920;
 		opt->im_height=480;//1080;
